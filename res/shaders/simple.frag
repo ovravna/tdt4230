@@ -36,27 +36,32 @@ vec3 specular;
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 
+float la = 0, lb = 10e-5, lc = 10e-4;
 void main()
 {
 	vec3 norm = normalize(normal);
 	diffuse = vec3(0);
 	specular = vec3(0);
+	vec3 normalCol = vec3(0.5 * normal + 0.5);
 
-	for	(int i = 1; i < 3; i++) {
+	for	(int i = 0; i < 3; i++) {
 		lightPos = lights[i].xyz;
 		vec3 lightDir = normalize(lightPos - fragmentPos);
+		
+		float d = distance(lightPos, fragmentPos);
+		float L = 1 / (la + d * lb + d * d * lc);
+
 		float diff = clamp(dot(norm, lightDir), 0.0, 1.0);
-		diffuse += diff * diffuseColor;
+		diffuse += diff * diffuseColor * L;
 
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);
 		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 128);
-		specular += specularStrength * spec * specularColor;
-
+		specular += specularStrength * spec * specularColor * L; 
 
 	}
 
-   	vec3 c = (ambient + diffuse + specular) * vec3(1, 1, 1); // vec3(0.5 * normal + 0.5);
+   	vec3 c = (ambient + diffuse + specular) * normalCol; // vec3(0.5 * normal + 0.5);
    	/* vec3 c = vec3(0.5 * normal + 0.5); */
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
