@@ -39,19 +39,19 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 void main()
 {
 	vec3 norm = normalize(normal);
-	diffuse = vec3(1, 1, 1);
-	specular = vec3(1, 1, 1);
+	diffuse = vec3(0);
+	specular = vec3(0);
 
-	for	(int i = 1; i < 2; i++) {
+	for	(int i = 1; i < 3; i++) {
 		lightPos = lights[i].xyz;
 		vec3 lightDir = normalize(lightPos - fragmentPos);
 		float diff = clamp(dot(norm, lightDir), 0.0, 1.0);
-		diffuse *= diff * diffuseColor;
+		diffuse += diff * diffuseColor;
 
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);
-		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 64);
-		specular *= specularStrength * spec * specularColor;
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 128);
+		specular += specularStrength * spec * specularColor;
 
 
 	}
