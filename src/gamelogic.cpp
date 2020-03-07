@@ -39,6 +39,7 @@ glm::mat4 projection, view;
 glm::vec4 lights[3];
 int lightIdx = 0;
 GLint normalMatricLoc;
+GLint camLoc;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
@@ -124,6 +125,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->activate();
 
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
+	camLoc = glad_glGetUniformLocation(shader->get(), "camPos");
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
@@ -344,6 +346,7 @@ void updateFrame(GLFWwindow* window) {
                     glm::translate(-cameraPosition);
 
     view = cameraTransform;
+	glUniform3fv(camLoc, 1, glm::value_ptr(cameraPosition)); 
 
     // Move and rotate various SceneNodes
     boxNode->position = { 0, -10, -80 };
