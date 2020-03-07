@@ -14,10 +14,10 @@ vec3 lightPos = vec3(0, 0, 0);
 vec3 lightDirection = normalize(vec3(0.8, -0.5, 0.6));
 
 float ambientStrenght = 0.1;
-vec3 ambientColor = vec3(0.9, 0.6, 0.8);
+vec3 ambientColor = vec3(1, 1, 1);
 vec3 ambient = ambientStrenght * ambientColor;
 
-vec3 diffuseColor = vec3(0.4, 0.4, 1);
+vec3 diffuseColor = vec3(1, 1, 1);
 vec3 diffuse;
 
 vec3 diffColors[] = {
@@ -61,7 +61,8 @@ void main()
 
 	}
 
-   	vec3 c = (ambient + diffuse + specular) * normalCol; // vec3(0.5 * normal + 0.5);
+   	/* vec3 c = (ambient + diffuse + specular) * normalCol; // vec3(0.5 * normal + 0.5); */
+   	vec3 c = (ambient + diffuse + specular) * vec3(1) + dither(textureCoordinates);
    	/* vec3 c = vec3(0.5 * normal + 0.5); */
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
