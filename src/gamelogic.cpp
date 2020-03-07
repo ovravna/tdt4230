@@ -1,3 +1,4 @@
+
 #include <chrono>
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -17,6 +18,7 @@
 #include "sceneGraph.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
@@ -34,11 +36,18 @@ unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
 
 glm::mat4 projection, view;
+glm::vec4 lights[3];
+int lightIdx = 0;
+GLint normalMatricLoc;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
+
+SceneNode* lightNode1;
+SceneNode* lightNode2;
+SceneNode* lightNode3;
 
 double ballRadius = 3.0f;
 
@@ -109,10 +118,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
+
     shader = new Gloom::Shader();
     shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
     shader->activate();
 
+	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
@@ -129,9 +140,21 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     padNode  = createSceneNode();
     ballNode = createSceneNode();
 
+	lightNode1 = createSceneNode();
+	lightNode2 = createSceneNode();
+	lightNode3 = createSceneNode();
+
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+	
+	lightNode1->nodeType = POINT_LIGHT;
+	lightNode2->nodeType = POINT_LIGHT;
+	lightNode3->nodeType = POINT_LIGHT;
+	padNode->children.push_back(lightNode1);
+	ballNode->children.push_back(lightNode2);
+	boxNode->children.push_back(lightNode3);
+
 
     boxNode->vertexArrayObjectID = boxVAO;
     boxNode->VAOIndexCount = box.indices.size();
@@ -367,8 +390,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
 void renderNode(SceneNode* node) {
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection));
+	auto nm = glm::mat3(glm::transpose(glm::inverse(node->currentTransformationMatrix)));
+    glUniformMatrix3fv(normalMatricLoc, 1, GL_FALSE, glm::value_ptr(nm));
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -377,7 +400,16 @@ void renderNode(SceneNode* node) {
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
             break;
-        case POINT_LIGHT: break;
+        case POINT_LIGHT: 
+
+			{
+			lights[lightIdx++] =  node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+			/* std::cout << glm::to_string(lights) << std::endl; */
+
+
+
+			}
+			break;
         case SPOT_LIGHT: break;
     }
 
@@ -391,5 +423,12 @@ void renderFrame(GLFWwindow* window) {
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
 
+    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform4fv(6, 1, glm::value_ptr(lights[0]));
+    glUniform4fv(7, 1, glm::value_ptr(lights[1]));
+    glUniform4fv(8, 1, glm::value_ptr(lights[2]));
+
+	lightIdx = 0;
     renderNode(rootNode);
 }
