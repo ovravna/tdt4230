@@ -1,10 +1,10 @@
 #version 430 core
-
 in layout(location = 0) vec3 normal;
 in layout(location = 1) vec2 textureCoordinates;
 
 uniform vec3 camPos;
 uniform layout(location = 6) vec4 lights[3];
+uniform layout(location = 9) vec3 lightColors[3];
 uniform vec3 ballPos;
 
 float ballRadius = 3.0f;
@@ -20,6 +20,7 @@ vec3 ambient = ambientStrenght * ambientColor;
 
 vec3 diffuseColor = vec3(1, 1, 1);
 vec3 diffuse;
+
 
 uniform sampler2D myTexture;
 out vec4 color;
@@ -63,7 +64,7 @@ void main()
 		float L = 1 / (la + d * lb + d * d * lc);
 
 		float diff = max(dot(norm, lightDir), 0.0);
-		diffuse += diff * diffuseColor * L * shadow;
+		diffuse += diff * lightColors[i] * L * shadow;
 
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);

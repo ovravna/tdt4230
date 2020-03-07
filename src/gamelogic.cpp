@@ -27,6 +27,12 @@ enum KeyFrameAction {
     BOTTOM, TOP
 };
 
+/* struct LightSource { */
+/* 	const float * position; */
+/* 	const float * color; */
+/* }; */
+
+
 #include <timestamps.h>
 
 double padPositionX = 0;
@@ -37,10 +43,18 @@ unsigned int previousKeyFrame = 0;
 
 glm::mat4 projection, view;
 glm::vec4 lights[3];
+glm::vec3 lightColors[3] {
+	glm::vec3(1, 0, 0),
+	glm::vec3(0, 1, 0),
+	glm::vec3(0, 0, 1),
+
+};
+
 int lightIdx = 0;
 GLint normalMatricLoc;
 GLint camLoc;
 GLint ballLoc;
+GLint lightSourcesLoc;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
@@ -128,6 +142,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
 	camLoc = glad_glGetUniformLocation(shader->get(), "camPos");
 	ballLoc = glad_glGetUniformLocation(shader->get(), "ballPos");
+	lightSourcesLoc = glad_glGetUniformLocation(shader->get(), "lightSources");
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
@@ -288,7 +303,7 @@ void updateFrame(GLFWwindow* window) {
                 ballYCoord = ballBottomY + BallVerticalTravelDistance;
             } else if (currentDestination == BOTTOM) {
                 ballYCoord = ballBottomY + BallVerticalTravelDistance * (1 - fractionFrameComplete);
-            } else if (currentDestination == TOP) {
+            } else {
                 ballYCoord = ballBottomY + BallVerticalTravelDistance * fractionFrameComplete;
             }
 
@@ -413,7 +428,10 @@ void renderNode(SceneNode* node) {
         case POINT_LIGHT: 
 
 			{
-			lights[lightIdx++] =  node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+			lights[lightIdx] = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+			/* lightColors[lightIdx] = glm::vec3(1, 0, 0); */
+
+			lightIdx++;
 			/* std::cout << glm::to_string(lights) << std::endl; */
 
 
@@ -438,8 +456,14 @@ void renderFrame(GLFWwindow* window) {
     glUniform4fv(6, 1, glm::value_ptr(lights[0]));
     glUniform4fv(7, 1, glm::value_ptr(lights[1]));
     glUniform4fv(8, 1, glm::value_ptr(lights[2]));
+
+    glUniform3fv(9, 1, glm::value_ptr(lightColors[0]));
+    glUniform3fv(10, 1, glm::value_ptr(lightColors[1]));
+    glUniform3fv(11, 1, glm::value_ptr(lightColors[2]));
+
 	glUniform3fv(ballLoc, 1, glm::value_ptr(ballPosition));
 
 	lightIdx = 0;
     renderNode(rootNode);
+
 }
