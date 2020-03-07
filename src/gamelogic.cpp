@@ -40,6 +40,7 @@ glm::vec4 lights[3];
 int lightIdx = 0;
 GLint normalMatricLoc;
 GLint camLoc;
+GLint ballLoc;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
@@ -126,6 +127,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
 	camLoc = glad_glGetUniformLocation(shader->get(), "camPos");
+	ballLoc = glad_glGetUniformLocation(shader->get(), "ballPos");
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
@@ -153,8 +155,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightNode1->nodeType = POINT_LIGHT;
 	lightNode2->nodeType = POINT_LIGHT;
 	lightNode3->nodeType = POINT_LIGHT;
+	lightNode1->position = glm::vec3(0, 50, 0);
+	lightNode2->position = glm::vec3(-60, 20, 0);
+	lightNode3->position = glm::vec3(50, -10, 0);
+
+
 	padNode->children.push_back(lightNode1);
-	ballNode->children.push_back(lightNode2);
+	boxNode->children.push_back(lightNode2);
 	boxNode->children.push_back(lightNode3);
 
 
@@ -431,6 +438,7 @@ void renderFrame(GLFWwindow* window) {
     glUniform4fv(6, 1, glm::value_ptr(lights[0]));
     glUniform4fv(7, 1, glm::value_ptr(lights[1]));
     glUniform4fv(8, 1, glm::value_ptr(lights[2]));
+	glUniform3fv(ballLoc, 1, glm::value_ptr(ballPosition));
 
 	lightIdx = 0;
     renderNode(rootNode);
