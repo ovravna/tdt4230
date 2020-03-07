@@ -15,7 +15,7 @@ out vec3 fragmentPos;
 
 void main()
 {
-    normal_out = normalMatrix * normal_in;
+    normal_out = normalize(normalMatrix * normal_in);
 
 	/* normal_out = mat3(transpose(inverse(model))) * normal_in; */
 

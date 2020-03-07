@@ -10,6 +10,11 @@ vec3 diffuseColor = vec3(1, 1, 1);
 
 vec3 lightDirection = normalize(vec3(0.8, -0.5, 0.6));
 
+float ambientStrenght = 0.2;
+vec3 ambientColor = vec3(0.8, 0.1, 0.6);
+vec3 ambient = ambientStrenght * ambientColor;
+
+
 uniform sampler2D myTexture;
 out vec4 color;
 
@@ -24,7 +29,7 @@ void main()
 	float diff = clamp(dot(norm, lightDir), 0.0, 1.0);
 	vec3 diffuse = diff * diffuseColor;
 
-   	vec3 c = diffuse * vec3(1, 1, 1); // vec3(0.5 * normal + 0.5);
+   	vec3 c = (ambient + diffuse) * vec3(1, 1, 1); // vec3(0.5 * normal + 0.5);
    	/* vec3 c = vec3(0.5 * normal + 0.5); */
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
