@@ -54,7 +54,7 @@ void main()
 
 		float r = length(reject(ballVec, lightVec));
 		float shadow = 1;
-		if (r < ballRadius) shadow = pow(r / ballRadius, 3);
+		if (r < ballRadius) shadow =  pow(r / ballRadius, 2) + 1 / length(lightVec);
 		if (length(ballVec) >= length(lightVec)) shadow = 1;
 		/* float angle = acos(dot(ballVec, lightPos) */
 		/* if (dot(ballVec, lightPos) < 0) shadow = 1; */

@@ -170,14 +170,18 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightNode1->nodeType = POINT_LIGHT;
 	lightNode2->nodeType = POINT_LIGHT;
 	lightNode3->nodeType = POINT_LIGHT;
-	lightNode1->position = glm::vec3(0, 50, 0);
-	lightNode2->position = glm::vec3(-60, 20, 0);
-	lightNode3->position = glm::vec3(50, -10, 0);
+
+	/* lightNode1->position = glm::vec3(0, 50, 0); */
+	/* lightNode2->position = glm::vec3(-60, 20, 0); */
+
+	lightNode1->position = glm::vec3(0, 0, 0);
+	lightNode2->position = glm::vec3(1, 0, 0);
+	lightNode3->position = glm::vec3(-1, 0, 0);
 
 
 	padNode->children.push_back(lightNode1);
-	boxNode->children.push_back(lightNode2);
-	boxNode->children.push_back(lightNode3);
+	padNode->children.push_back(lightNode2);
+	padNode->children.push_back(lightNode3);
 
 
     boxNode->vertexArrayObjectID = boxVAO;
