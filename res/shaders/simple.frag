@@ -1,6 +1,6 @@
 #version 430 core
 in layout(location = 0) vec3 normal;
-in layout(location = 1) vec2 textureCoordinates;
+in layout(location = 1) vec2 uv;
 
 layout(binding = 1) uniform sampler2D diffuseTexture;
 layout(binding = 2) uniform sampler2D normalMap;
@@ -45,7 +45,7 @@ float la = 0.001, lb = 10e-5, lc = 10e-4;
 void main()
 {
 
-	vec3 normal_ts = normalize(texture(normalMap, textureCoordinates).rgb * 2 - 1);
+	vec3 normal_ts = normalize(texture(normalMap, uv).rgb * 2 - 1);
 
 	vec3 norm = drawMode == 2 ? TNB * normal_ts : normalize(normal);
 	diffuse = vec3(0);
@@ -84,8 +84,9 @@ void main()
 	}
 
    	/* vec3 c = (ambient + diffuse + specular) * normalCol; // vec3(0.5 * normal + 0.5); */
-	vec4 c0 = drawMode == 2 ? texture(diffuseTexture, textureCoordinates) : vec4(1);
-   	vec3 c = (ambient + diffuse + specular) * c0.xyz + dither(textureCoordinates);
+	vec4 c0 = drawMode == 2 ? texture(diffuseTexture, uv) : vec4(1);
+   	vec3 c = (ambient + diffuse + specular) * c0.xyz + dither(uv);
+	c = drawMode == 2 ? norm : c;
    	/* vec3 c = vec3(0.5 * normal + 0.5); */
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
