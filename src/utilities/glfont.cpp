@@ -117,7 +117,7 @@ Mesh generateTextGeometryBuffer(std::string text, float characterHeightOverWidth
         mesh.indices.at(6 * i + 5) = 4 * i + 3;
 
     }
-	updateText(&mesh, text);
+	setText(&mesh, text);
 
 
     return mesh;

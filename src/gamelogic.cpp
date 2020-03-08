@@ -40,7 +40,7 @@ glm::mat4 orthoProjection;
 
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
-	glm::vec3(1, 0, 0),
+	glm::vec3(1, 1, 1),
 	glm::vec3(0, 1, 0),
 	glm::vec3(0, 0, 1),
 
@@ -174,11 +174,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     shader->activate();
 
-	PNGImage img = loadPNGFile("res/textures/charmap.png");
+	PNGImage charmap = loadPNGFile("res/textures/charmap.png");
+
+	PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png");
+	PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png");
 
 	std::string t = "Ninja";
 
-	text = generateTextGeometryBuffer(14); 
+	text = generateTextGeometryBuffer(30); 
 	/* updateText(&text, t); */
 
 
@@ -186,7 +189,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	textNode = createSceneNode();
 	textNode->vertexArrayObjectID = generateBuffer(text);
 	textNode->nodeType = GEOMETRY_2D;
-	textNode->textureID = loadTextureFromImage(img);
+	textNode->textureID = loadTextureFromImage(charmap);
 	textNode->VAOIndexCount = text.indices.size();
 	textNode->position = glm::vec3(0);
 
@@ -238,14 +241,20 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightNode1->position = glm::vec3(0, 50, 0);
 	/* textNode->position = glm::vec3(0, 0, 0); */
 
-	lightNode1->position = glm::vec3(0, 0, 0);
+	lightNode1->position = glm::vec3(-20, 10, -70);
 	lightNode2->position = glm::vec3(1, 0, 0);
 	lightNode3->position = glm::vec3(-1, 0, 0);
 
 
-	padNode->children.push_back(lightNode1);
-	padNode->children.push_back(lightNode2);
-	padNode->children.push_back(lightNode3);
+	rootNode->children.push_back(lightNode1);
+	/* padNode->children.push_back(lightNode2); */
+	/* padNode->children.push_back(lightNode3); */
+
+
+	boxNode->nodeType = GEOMETRY_NORMAL_MAPPED;
+	boxNode->textureID = loadTextureFromImage(diffuseTexture);
+	boxNode->normalMapTextureID = loadTextureFromImage(normalMap);
+
 
 
     boxNode->vertexArrayObjectID = boxVAO;
@@ -489,8 +498,21 @@ void renderNode(SceneNode* node) {
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
             break;
+		case GEOMETRY_NORMAL_MAPPED: 
+			if (node->vertexArrayObjectID != -1) {
+				glad_glUniform1i(drawModeLoc, 2);
+
+				glBindTextureUnit(1, node->textureID);
+				glBindTextureUnit(2, node->normalMapTextureID);
+
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+				glad_glUniform1i(drawModeLoc, 0);
+			}
+
+			break;
 		case GEOMETRY_2D:
-			
 			break;
         case POINT_LIGHT: 
 			lights[lightIdx++] = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
@@ -508,7 +530,7 @@ void renderText(SceneNode * node) {
 		shaderText->activate();
 		glBindTextureUnit(0, node->textureID);
 
-		setText(&text, fmt::format("{}", ballNode->position.x) );
+		setText(&text, fmt::format("{:.1f} {:.1f} {:.1f}", ballNode->position.x, ballNode->position.y, ballNode->position.z) );
 		updateTextureCoordinates(node->vertexArrayObjectID, text);
 
 		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */

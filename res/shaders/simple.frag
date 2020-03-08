@@ -6,14 +6,13 @@ uniform vec3 camPos;
 uniform layout(location = 6) vec4 lights[3];
 uniform layout(location = 9) vec3 lightColors[3];
 uniform vec3 ballPos;
-uniform int drawMode;
+
+uniform int drawMode; // 0=3D, 1=2D
 
 float ballRadius = 3.0f;
 
 in vec3 fragmentPos;
 vec3 lightPos = vec3(0, 0, 0);
-
-vec3 lightDirection = normalize(vec3(0.8, -0.5, 0.6));
 
 float ambientStrenght = 0.1;
 vec3 ambientColor = vec3(1, 1, 1);
@@ -24,7 +23,6 @@ vec3 diffuse;
 
 
 uniform sampler2D myTexture;
-/* layout(binding = 1) uniform sampler2D charTexture; */
 out vec4 color;
 
 float specularStrength = 0.4;
@@ -38,7 +36,7 @@ vec3 reject(vec3 from, vec3 onto) {
 	return from - onto*dot(from, onto)/dot(onto, onto);
 }
 
-float la = 0.1, lb = 10e-5, lc = 10e-4;
+float la = 0.001, lb = 10e-5, lc = 10e-4;
 void main()
 {
 
@@ -49,7 +47,7 @@ void main()
 
 	vec3 ballVec = ballPos - fragmentPos;
 
-	for	(int i = 0; i < 3; i++) {
+	for	(int i = 0; i < 1; i++) {
 		lightPos = lights[i].xyz;
 
 		vec3 lightVec = lightPos - fragmentPos;

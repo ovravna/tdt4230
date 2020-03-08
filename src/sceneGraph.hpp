@@ -14,7 +14,7 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, GEOMETRY_2D, POINT_LIGHT, SPOT_LIGHT
+	GEOMETRY, GEOMETRY_2D, GEOMETRY_NORMAL_MAPPED, POINT_LIGHT, SPOT_LIGHT, 
 };
 
 struct SceneNode {
