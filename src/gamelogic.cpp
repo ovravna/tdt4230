@@ -43,6 +43,7 @@ unsigned int previousKeyFrame = 0;
 
 glm::mat4 projection, view;
 glm::mat4 orthoProjection;
+glm::mat4 ortho = glm::ortho(0.f, (float)windowWidth, 0.f, (float)windowHeight);
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
 	glm::vec3(1, 0, 0),
@@ -200,13 +201,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightSourcesLoc = glad_glGetUniformLocation(shader->get(), "lightSources");
 	drawModeLoc = glad_glGetUniformLocation(shader->get(), "drawMode");
 
-	orthoProjectionLoc = glad_glGetUniformLocation(shaderText->get(), "orthoProjection"), 
-	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos"), 
+	orthoProjectionLoc = glad_glGetUniformLocation(shaderText->get(), "orthoProjection");
+	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos");
 
-	orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 100.0f);
-    glUniformMatrix4fv(
-			orthoProjectionLoc,
-			1, GL_FALSE, glm::value_ptr(orthoProjection));
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
@@ -230,9 +227,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     rootNode->children.push_back(textNode);
 
-    /* rootNode->children.push_back(boxNode); */
-    /* rootNode->children.push_back(padNode); */
-    /* rootNode->children.push_back(ballNode); */
+    rootNode->children.push_back(boxNode);
+    rootNode->children.push_back(padNode);
+    rootNode->children.push_back(ballNode);
 
 	
 	lightNode1->nodeType = POINT_LIGHT;
@@ -513,14 +510,12 @@ void renderNode(SceneNode* node) {
 void renderText(SceneNode * node) {
 	
 		shaderText->activate();
-
-		glBindTextureUnit(1, node->textureID);
+		glBindTextureUnit(0, node->textureID);
 		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */
 		/* glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection)); */
 		/* glUniformMatrix3fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(nm)); */
 		/* orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 100.0f); */
-
-		glUniformMatrix4fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(orthoProjection));
+		glUniformMatrix4fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(ortho));
 		glUniform3fv(textPosLoc, 1, glm::value_ptr(node->position));
 		
 		/* glBindTexture(GL_TEXTURE_2D, node->textureID); */ 
@@ -529,9 +524,8 @@ void renderText(SceneNode * node) {
 		glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
 
 		shader->activate();
-
-
 }
+
 
 void renderFrame(GLFWwindow* window) {
     int windowWidth, windowHeight;

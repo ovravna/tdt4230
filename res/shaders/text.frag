@@ -2,7 +2,7 @@
 in layout(location = 1) vec2 textureCoordinates;
 out vec4 color;
 
-layout(binding = 1) uniform sampler2D charTexture;
+layout(binding = 0) uniform sampler2D charTexture;
 
 void main() {
 
