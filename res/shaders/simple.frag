@@ -2,6 +2,9 @@
 in layout(location = 0) vec3 normal;
 in layout(location = 1) vec2 textureCoordinates;
 
+layout(binding = 1) uniform sampler2D diffuseTexture;
+layout(binding = 2) uniform sampler2D normalMap;
+
 uniform vec3 camPos;
 uniform layout(location = 6) vec4 lights[3];
 uniform layout(location = 9) vec3 lightColors[3];
@@ -75,7 +78,8 @@ void main()
 	}
 
    	/* vec3 c = (ambient + diffuse + specular) * normalCol; // vec3(0.5 * normal + 0.5); */
-   	vec3 c = (ambient + diffuse + specular) * vec3(1) + dither(textureCoordinates);
+	vec4 c0 = drawMode == 2 ? texture(diffuseTexture, textureCoordinates) : vec4(1);
+   	vec3 c = (ambient + diffuse + specular) * c0.xyz + dither(textureCoordinates);
    	/* vec3 c = vec3(0.5 * normal + 0.5); */
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
