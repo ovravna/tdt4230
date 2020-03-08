@@ -48,6 +48,7 @@ glm::vec3 lightColors[3] {
 
 int lightIdx = 0;
 GLint normalMatricLoc;
+GLint mv3x3Loc;
 GLint camLoc;
 GLint ballLoc;
 GLint lightSourcesLoc;
@@ -196,6 +197,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
+	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "MV3x3");
 	camLoc = glad_glGetUniformLocation(shader->get(), "camPos");
 	ballLoc = glad_glGetUniformLocation(shader->get(), "ballPos");
 	lightSourcesLoc = glad_glGetUniformLocation(shader->get(), "lightSources");
@@ -488,7 +490,9 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 void renderNode(SceneNode* node) {
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
 	auto nm = glm::mat3(glm::transpose(glm::inverse(node->currentTransformationMatrix)));
+	auto mv3x3 = glm::mat3(view * node->currentTransformationMatrix);
     glUniformMatrix3fv(normalMatricLoc, 1, GL_FALSE, glm::value_ptr(nm));
+    glUniformMatrix3fv(mv3x3Loc, 1, GL_FALSE, glm::value_ptr(mv3x3));
 
     switch(node->nodeType) {
         case GEOMETRY:

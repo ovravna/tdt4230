@@ -15,6 +15,8 @@ uniform int drawMode; // 0=3D, 1=2D
 float ballRadius = 3.0f;
 
 in vec3 fragmentPos;
+in mat3x3 TNB;
+
 vec3 lightPos = vec3(0, 0, 0);
 
 float ambientStrenght = 0.1;
@@ -43,7 +45,9 @@ float la = 0.001, lb = 10e-5, lc = 10e-4;
 void main()
 {
 
-	vec3 norm = drawMode == 2 ? 2 * texture(normalMap, textureCoordinates).xyz - vec3(1): normalize(normal);
+	vec3 normal_ts = normalize(texture(normalMap, textureCoordinates).rgb * 2 - 1);
+
+	vec3 norm = drawMode == 2 ? TNB * normal_ts : normalize(normal);
 	diffuse = vec3(0);
 	specular = vec3(0);
 	vec3 normalCol = vec3(0.5 * normal + 0.5);
@@ -67,12 +71,14 @@ void main()
 		float d = distance(lightPos, fragmentPos);
 		float L = 1 / (la + d * lb + d * d * lc);
 
+      	/* float L = 1/(1.000+d*0.010+pow(d,2)*0.0005); */
+
 		float diff = max(dot(norm, lightDir), 0.0);
 		diffuse += diff * lightColors[i] * L * shadow;
 
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);
-		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1024);
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16);
 		specular += specularStrength * spec * specularColor * L * shadow;
 
 	}

@@ -35,7 +35,9 @@
 /build/*
 !/build/.emptydirectory
 
-/.vscode/*lib/SFML
+/.vscode
+
+lib/SFML
 lib/glad
 lib/glm
 .clangd/
@@ -44,3 +46,4 @@ Makefile
 cmake_install.cmake
 compile_commands.json
 glowbox
+
