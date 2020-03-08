@@ -30,8 +30,8 @@ Mesh generateTextGeometryBuffer(std::string text, float characterHeightOverWidth
         mesh.vertices.at(4 * i + 3) = {baseXCoordinate, characterHeight, 0};
 
 		// 
-		float u = 1 / 128;
-		float idx = int(text[i]);
+		float u = 1.0f / 128.0f;
+		int idx = text[i];
         mesh.textureCoordinates.at(4 * i + 0) = { idx * u, 0 };
         mesh.textureCoordinates.at(4 * i + 1) = { (idx + 1) * u , 0 }; 
         mesh.textureCoordinates.at(4 * i + 2) = { (idx + 1) * u , 1 };

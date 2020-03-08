@@ -495,6 +495,7 @@ void renderNode(SceneNode* node) {
 				glUniform1i(drawModeLoc, 1);
 				glBindTextureUnit(1, node->textureID);
 				/* glBindTexture(GL_TEXTURE_2D, node->textureID); */ 
+    			/* glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix)); */
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
 
