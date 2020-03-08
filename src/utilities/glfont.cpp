@@ -13,15 +13,27 @@ void clearText(Mesh * mesh) {
 
 void setText(Mesh * mesh, std::string text) {
 	
-    for(unsigned int i = 0; i < text.length(); i++)
+    for(unsigned int i = 0; i < mesh->textureCoordinates.size() / 4; i++)
     {
 		// 
 		float u = 1.0f / 128.0f;
-		int idx = text[i];
-        mesh->textureCoordinates.at(4 * i + 0) = { idx * u, 0 };
-        mesh->textureCoordinates.at(4 * i + 1) = { (idx + 1) * u , 0 }; 
-        mesh->textureCoordinates.at(4 * i + 2) = { (idx + 1) * u , 1 };
-        mesh->textureCoordinates.at(4 * i + 3) = { idx * u, 1 };
+
+
+		int idx = 0; // = text[i];
+		if (i < text.length()) {
+			idx = text[i];
+			mesh->textureCoordinates.at(4 * i + 0) = { idx * u, 0 };
+			mesh->textureCoordinates.at(4 * i + 1) = { (idx + 1) * u , 0 }; 
+			mesh->textureCoordinates.at(4 * i + 2) = { (idx + 1) * u , 1 };
+			mesh->textureCoordinates.at(4 * i + 3) = { idx * u, 1 };
+		}
+		else  {
+			mesh->textureCoordinates.at(4 * i + 0) = { 0, 0 };
+			mesh->textureCoordinates.at(4 * i + 1) = { 0, 0 }; 
+			mesh->textureCoordinates.at(4 * i + 2) = { 0, 0 };
+			mesh->textureCoordinates.at(4 * i + 3) = { 0, 0 };
+		}
+
 
    }
 }

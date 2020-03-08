@@ -72,6 +72,7 @@ SceneNode* textNode;
 
 
 double ballRadius = 3.0f;
+double timeDelta;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
@@ -243,7 +244,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightNode3->nodeType = POINT_LIGHT;
 
 	/* lightNode1->position = glm::vec3(0, 50, 0); */
-	/* textNode->position = glm::vec3(0, 0, 0); */
+	textNode->position = glm::vec3(10, windowHeight - 50, 0);
 
 	lightNode1->position = glm::vec3(0, 70, 0);
 	lightNode2->position = glm::vec3(1, 0, 0);
@@ -279,10 +280,11 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
+
 void updateFrame(GLFWwindow* window) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    double timeDelta = getTimeDeltaSeconds();
+    timeDelta = getTimeDeltaSeconds();
 
     const float ballBottomY = boxNode->position.y - (boxDimensions.y/2) + ballRadius + padDimensions.y;
     const float ballTopY    = boxNode->position.y + (boxDimensions.y/2) - ballRadius;
@@ -481,6 +483,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
     switch(node->nodeType) {
         case GEOMETRY: break;
         case GEOMETRY_2D: break;
+        case GEOMETRY_NORMAL_MAPPED: break;
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
     }
@@ -538,7 +541,10 @@ void renderText(SceneNode * node) {
 		shaderText->activate();
 		glBindTextureUnit(0, node->textureID);
 
-		setText(&text, fmt::format("{:.1f} {:.1f} {:.1f}", ballNode->position.x, ballNode->position.y, ballNode->position.z) );
+		int fps = std::round(1.0f / timeDelta);
+
+		/* clearText(&text); */
+		setText(&text, fmt::format("{}", fps) );
 		updateTextureCoordinates(node->vertexArrayObjectID, text);
 
 		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */
@@ -573,6 +579,8 @@ void renderFrame(GLFWwindow* window) {
     glUniform3fv(11, 1, glm::value_ptr(lightColors[2]));
 
 	glUniform3fv(ballLoc, 1, glm::value_ptr(ballPosition));
+
+
 
 
 	lightIdx = 0;
