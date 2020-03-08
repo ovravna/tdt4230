@@ -180,6 +180,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png");
 	PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png");
 
+	PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png");
+
 	std::string t = "Ninja";
 
 	text = generateTextGeometryBuffer(30); 
@@ -256,6 +258,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	boxNode->nodeType = GEOMETRY_NORMAL_MAPPED;
 	boxNode->textureID = loadTextureFromImage(diffuseTexture);
 	boxNode->normalMapTextureID = loadTextureFromImage(normalMap);
+	boxNode->roughnessID = loadTextureFromImage(roughnessMap);
 
 
 
@@ -508,6 +511,7 @@ void renderNode(SceneNode* node) {
 
 				glBindTextureUnit(1, node->textureID);
 				glBindTextureUnit(2, node->normalMapTextureID);
+				glBindTextureUnit(3, node->roughnessID);
 
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);

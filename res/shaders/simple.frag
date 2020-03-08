@@ -4,6 +4,7 @@ in layout(location = 1) vec2 uv;
 
 layout(binding = 1) uniform sampler2D diffuseTexture;
 layout(binding = 2) uniform sampler2D normalMap;
+layout(binding = 3) uniform sampler2D roughnessMap;
 
 uniform vec3 camPos;
 uniform layout(location = 6) vec4 lights[3];
@@ -78,7 +79,8 @@ void main()
 
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);
-		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16);
+		float roughness = drawMode == 2 ? 5.0f / pow(length(texture(roughnessMap, uv)), 2) : 512;
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), roughness);
 		specular += specularStrength * spec * specularColor * L * shadow;
 
 	}
