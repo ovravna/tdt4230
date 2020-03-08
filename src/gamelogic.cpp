@@ -238,15 +238,15 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightNode2->nodeType = POINT_LIGHT;
 	lightNode3->nodeType = POINT_LIGHT;
 
-	lightNode1->position = glm::vec3(0, 50, 0);
+	/* lightNode1->position = glm::vec3(0, 50, 0); */
 	/* textNode->position = glm::vec3(0, 0, 0); */
 
-	lightNode1->position = glm::vec3(-20, 10, -70);
+	lightNode1->position = glm::vec3(0, 70, 0);
 	lightNode2->position = glm::vec3(1, 0, 0);
 	lightNode3->position = glm::vec3(-1, 0, 0);
 
 
-	rootNode->children.push_back(lightNode1);
+	padNode->children.push_back(lightNode1);
 	/* padNode->children.push_back(lightNode2); */
 	/* padNode->children.push_back(lightNode3); */
 

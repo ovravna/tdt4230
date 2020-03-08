@@ -43,7 +43,7 @@ float la = 0.001, lb = 10e-5, lc = 10e-4;
 void main()
 {
 
-	vec3 norm = normalize(normal);
+	vec3 norm = drawMode == 2 ? 2 * texture(normalMap, textureCoordinates).xyz - vec3(1): normalize(normal);
 	diffuse = vec3(0);
 	specular = vec3(0);
 	vec3 normalCol = vec3(0.5 * normal + 0.5);
