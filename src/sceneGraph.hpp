@@ -14,7 +14,7 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT
+	GEOMETRY, GEOMETRY_2D, POINT_LIGHT, SPOT_LIGHT
 };
 
 struct SceneNode {
@@ -25,6 +25,9 @@ struct SceneNode {
 
         referencePoint = glm::vec3(0, 0, 0);
         vertexArrayObjectID = -1;
+        textureID = -1;
+        normalMapTextureID = -1;
+
         VAOIndexCount = 0;
 
         nodeType = GEOMETRY;
@@ -48,6 +51,8 @@ struct SceneNode {
 
 	// The ID of the VAO containing the "appearance" of this SceneNode.
 	int vertexArrayObjectID;
+	int textureID;
+	int normalMapTextureID;
 	unsigned int VAOIndexCount;
 
 	// Node type is used to determine how to handle the contents of a node

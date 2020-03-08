@@ -23,6 +23,7 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
+    /* glDisable(GL_CULL_FACE); */
 
 
     // Disable built-in dithering

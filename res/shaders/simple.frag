@@ -6,6 +6,7 @@ uniform vec3 camPos;
 uniform layout(location = 6) vec4 lights[3];
 uniform layout(location = 9) vec3 lightColors[3];
 uniform vec3 ballPos;
+uniform int drawMode;
 
 float ballRadius = 3.0f;
 
@@ -23,6 +24,7 @@ vec3 diffuse;
 
 
 uniform sampler2D myTexture;
+layout(binding = 1) uniform sampler2D charTexture;
 out vec4 color;
 
 float specularStrength = 0.4;
@@ -36,9 +38,16 @@ vec3 reject(vec3 from, vec3 onto) {
 	return from - onto*dot(from, onto)/dot(onto, onto);
 }
 
-float la = 0, lb = 10e-5, lc = 10e-4;
+float la = 0.1, lb = 10e-5, lc = 10e-4;
 void main()
 {
+	if (drawMode == 1) {
+		vec4 tex = texture(charTexture, textureCoordinates);
+		/* color = vec4(1, 0, 0, tex.w != 0 ? 0 : 1); */
+		color = vec4(tex.xyz, 1);
+		/* color = vec4(1, 0, 0, 1); */
+	}
+	else {
 	vec3 norm = normalize(normal);
 	diffuse = vec3(0);
 	specular = vec3(0);
@@ -68,7 +77,7 @@ void main()
 
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);
-		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), 1024);
 		specular += specularStrength * spec * specularColor * L * shadow;
 
 	}
@@ -79,4 +88,5 @@ void main()
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
 	color = vec4(c, 1.0);
+	}
 }

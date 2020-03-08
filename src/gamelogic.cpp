@@ -42,6 +42,7 @@ unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
 
 glm::mat4 projection, view;
+glm::mat4 orthoProjection;
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
 	glm::vec3(1, 0, 0),
@@ -55,6 +56,7 @@ GLint normalMatricLoc;
 GLint camLoc;
 GLint ballLoc;
 GLint lightSourcesLoc;
+GLint drawModeLoc;
 
 SceneNode* rootNode;
 SceneNode* boxNode;
@@ -64,6 +66,8 @@ SceneNode* padNode;
 SceneNode* lightNode1;
 SceneNode* lightNode2;
 SceneNode* lightNode3;
+
+SceneNode* textNode;
 
 double ballRadius = 3.0f;
 
@@ -165,18 +169,37 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	
 
 
-	auto img = loadPNGFile("res/textures/charmap.png");
-	auto charTex = loadTextureFromImage(img);
+	PNGImage img = loadPNGFile("res/textures/charmap.png");
+	int charTex = loadTextureFromImage(img);
+
+	/* glBindTextureUnit(1, charTex); */
 	float h = 39, w = 29;
-	Mesh text = generateTextGeometryBuffer("kake", h/w, w * 4); 
+	std::string t = "kake er kjempe godt";
+
+	Mesh text = generateTextGeometryBuffer(t, h/w, w * t.length()); 
 
 	unsigned int textVAO = generateBuffer(text);
+
+	textNode = createSceneNode();
+	textNode->vertexArrayObjectID = textVAO;
+	textNode->nodeType = GEOMETRY_2D;
+	textNode->textureID = charTex;
+	textNode->VAOIndexCount = text.indices.size();
+
 
 
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
 	camLoc = glad_glGetUniformLocation(shader->get(), "camPos");
 	ballLoc = glad_glGetUniformLocation(shader->get(), "ballPos");
 	lightSourcesLoc = glad_glGetUniformLocation(shader->get(), "lightSources");
+	drawModeLoc = glad_glGetUniformLocation(shader->get(), "drawMode");
+
+
+	orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 100.0f);
+    glUniformMatrix4fv(
+			glad_glGetUniformLocation(shader->get(), "orthoProjection"), 
+			1, GL_FALSE, glm::value_ptr(orthoProjection));
+
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
@@ -200,13 +223,15 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+
+    padNode->children.push_back(textNode);
 	
 	lightNode1->nodeType = POINT_LIGHT;
 	lightNode2->nodeType = POINT_LIGHT;
 	lightNode3->nodeType = POINT_LIGHT;
 
 	/* lightNode1->position = glm::vec3(0, 50, 0); */
-	/* lightNode2->position = glm::vec3(-60, 20, 0); */
+	textNode->position = glm::vec3(0, 20, 0);
 
 	lightNode1->position = glm::vec3(0, 0, 0);
 	lightNode2->position = glm::vec3(1, 0, 0);
@@ -396,6 +421,7 @@ void updateFrame(GLFWwindow* window) {
 
     projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
 
+
     glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
 
     // Some math to make the camera move in a nice way
@@ -442,6 +468,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
     switch(node->nodeType) {
         case GEOMETRY: break;
+        case GEOMETRY_2D: break;
         case POINT_LIGHT: break;
         case SPOT_LIGHT: break;
     }
@@ -463,18 +490,20 @@ void renderNode(SceneNode* node) {
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
             break;
-        case POINT_LIGHT: 
+		case GEOMETRY_2D:
+			if (node->vertexArrayObjectID != -1) {
+				glUniform1i(drawModeLoc, 1);
+				glBindTextureUnit(1, node->textureID);
+				/* glBindTexture(GL_TEXTURE_2D, node->textureID); */ 
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
 
-			{
-			lights[lightIdx] = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
-			/* lightColors[lightIdx] = glm::vec3(1, 0, 0); */
-
-			lightIdx++;
-			/* std::cout << glm::to_string(lights) << std::endl; */
-
-
+				glUniform1i(drawModeLoc, 0);
 
 			}
+			break;
+        case POINT_LIGHT: 
+			lights[lightIdx++] = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
 			break;
         case SPOT_LIGHT: break;
     }
@@ -500,6 +529,8 @@ void renderFrame(GLFWwindow* window) {
     glUniform3fv(11, 1, glm::value_ptr(lightColors[2]));
 
 	glUniform3fv(ballLoc, 1, glm::value_ptr(ballPosition));
+
+	glUniform1i(drawModeLoc, 0);
 
 	lightIdx = 0;
     renderNode(rootNode);
