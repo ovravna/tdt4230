@@ -86,7 +86,6 @@ void main()
    	/* vec3 c = (ambient + diffuse + specular) * normalCol; // vec3(0.5 * normal + 0.5); */
 	vec4 c0 = drawMode == 2 ? texture(diffuseTexture, uv) : vec4(1);
    	vec3 c = (ambient + diffuse + specular) * c0.xyz + dither(uv);
-	c = drawMode == 2 ? norm : c;
    	/* vec3 c = vec3(0.5 * normal + 0.5); */
 
 	/* vec3 c = vec3(1, 1, 1) * max(0, dot(normal, -lightDir)); */
