@@ -58,6 +58,9 @@ GLint ballLoc;
 GLint lightSourcesLoc;
 GLint drawModeLoc;
 
+GLint orthoProjectionLoc;
+GLint textPosLoc;
+
 SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
@@ -74,6 +77,7 @@ double ballRadius = 3.0f;
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
 Gloom::Shader* shader;
+Gloom::Shader* shaderText;
 sf::Sound* sound;
 
 const glm::vec3 boxDimensions(180, 90, 90);
@@ -165,26 +169,28 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     shader = new Gloom::Shader();
     shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
-    shader->activate();
+    /* shader->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag"); */
+
+    shaderText = new Gloom::Shader();
+    shaderText->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag");
 	
 
+    shader->activate();
 
 	PNGImage img = loadPNGFile("res/textures/charmap.png");
-	int charTex = loadTextureFromImage(img);
 
-	/* glBindTextureUnit(1, charTex); */
-	float h = 39, w = 29;
-	std::string t = "kake er kjempe godt";
+	float h = 39.0f, w = 29.0f;
+	std::string t = "Ninja";
 
 	Mesh text = generateTextGeometryBuffer(t, h/w, w * t.length()); 
 
-	unsigned int textVAO = generateBuffer(text);
 
 	textNode = createSceneNode();
-	textNode->vertexArrayObjectID = textVAO;
+	textNode->vertexArrayObjectID = generateBuffer(text);
 	textNode->nodeType = GEOMETRY_2D;
-	textNode->textureID = charTex;
+	textNode->textureID = loadTextureFromImage(img);
 	textNode->VAOIndexCount = text.indices.size();
+	textNode->position = glm::vec3(0);
 
 
 
@@ -194,10 +200,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightSourcesLoc = glad_glGetUniformLocation(shader->get(), "lightSources");
 	drawModeLoc = glad_glGetUniformLocation(shader->get(), "drawMode");
 
+	orthoProjectionLoc = glad_glGetUniformLocation(shaderText->get(), "orthoProjection"), 
+	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos"), 
 
 	orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 100.0f);
     glUniformMatrix4fv(
-			glad_glGetUniformLocation(shader->get(), "orthoProjection"), 
+			orthoProjectionLoc,
 			1, GL_FALSE, glm::value_ptr(orthoProjection));
 
     // Create meshes
@@ -220,18 +228,19 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	lightNode2 = createSceneNode();
 	lightNode3 = createSceneNode();
 
-    rootNode->children.push_back(boxNode);
-    rootNode->children.push_back(padNode);
-    rootNode->children.push_back(ballNode);
+    rootNode->children.push_back(textNode);
 
-    padNode->children.push_back(textNode);
+    /* rootNode->children.push_back(boxNode); */
+    /* rootNode->children.push_back(padNode); */
+    /* rootNode->children.push_back(ballNode); */
+
 	
 	lightNode1->nodeType = POINT_LIGHT;
 	lightNode2->nodeType = POINT_LIGHT;
 	lightNode3->nodeType = POINT_LIGHT;
 
-	/* lightNode1->position = glm::vec3(0, 50, 0); */
-	textNode->position = glm::vec3(0, 20, 0);
+	lightNode1->position = glm::vec3(0, 50, 0);
+	/* textNode->position = glm::vec3(0, 0, 0); */
 
 	lightNode1->position = glm::vec3(0, 0, 0);
 	lightNode2->position = glm::vec3(1, 0, 0);
@@ -449,9 +458,6 @@ void updateFrame(GLFWwindow* window) {
 
     updateNodeTransformations(rootNode, glm::mat4(1));
 
-
-
-
 }
 
 void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
@@ -491,17 +497,7 @@ void renderNode(SceneNode* node) {
             }
             break;
 		case GEOMETRY_2D:
-			if (node->vertexArrayObjectID != -1) {
-				glUniform1i(drawModeLoc, 1);
-				glBindTextureUnit(1, node->textureID);
-				/* glBindTexture(GL_TEXTURE_2D, node->textureID); */ 
-    			/* glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix)); */
-                glBindVertexArray(node->vertexArrayObjectID);
-                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-
-				glUniform1i(drawModeLoc, 0);
-
-			}
+			
 			break;
         case POINT_LIGHT: 
 			lights[lightIdx++] = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
@@ -514,6 +510,29 @@ void renderNode(SceneNode* node) {
     }
 }
 
+void renderText(SceneNode * node) {
+	
+		shaderText->activate();
+
+		glBindTextureUnit(1, node->textureID);
+		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */
+		/* glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection)); */
+		/* glUniformMatrix3fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(nm)); */
+		/* orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 100.0f); */
+
+		glUniformMatrix4fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(orthoProjection));
+		glUniform3fv(textPosLoc, 1, glm::value_ptr(node->position));
+		
+		/* glBindTexture(GL_TEXTURE_2D, node->textureID); */ 
+		/* node->currentTransformationMatrix *= glm::scale(glm::vec3(0.3f, 0.3f, 0.3f)); */
+		glBindVertexArray(node->vertexArrayObjectID);
+		glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+		shader->activate();
+
+
+}
+
 void renderFrame(GLFWwindow* window) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
@@ -521,6 +540,7 @@ void renderFrame(GLFWwindow* window) {
 
     glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection));
+
     glUniform4fv(6, 1, glm::value_ptr(lights[0]));
     glUniform4fv(7, 1, glm::value_ptr(lights[1]));
     glUniform4fv(8, 1, glm::value_ptr(lights[2]));
@@ -531,9 +551,9 @@ void renderFrame(GLFWwindow* window) {
 
 	glUniform3fv(ballLoc, 1, glm::value_ptr(ballPosition));
 
-	glUniform1i(drawModeLoc, 0);
 
 	lightIdx = 0;
     renderNode(rootNode);
+	renderText(textNode);
 
 }
