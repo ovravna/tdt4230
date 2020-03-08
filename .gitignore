@@ -35,4 +35,12 @@
 /build/*
 !/build/.emptydirectory
 
-/.vscode/*
+/.vscode/*lib/SFML
+lib/glad
+lib/glm
+.clangd/
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
+glowbox
