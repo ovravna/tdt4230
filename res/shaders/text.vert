@@ -2,6 +2,7 @@
 
 in layout(location = 0) vec3 position;
 in layout(location = 2) vec2 textureCoordinates_in;
+
 uniform mat4 orthoProjection;
 uniform vec3 textPos;
 

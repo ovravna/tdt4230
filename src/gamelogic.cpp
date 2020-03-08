@@ -27,12 +27,6 @@ enum KeyFrameAction {
     BOTTOM, TOP
 };
 
-/* struct LightSource { */
-/* 	const float * position; */
-/* 	const float * color; */
-/* }; */
-
-
 #include <timestamps.h>
 
 double padPositionX = 0;
@@ -43,7 +37,7 @@ unsigned int previousKeyFrame = 0;
 
 glm::mat4 projection, view;
 glm::mat4 orthoProjection;
-glm::mat4 ortho = glm::ortho(0.f, (float)windowWidth, 0.f, (float)windowHeight);
+
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
 	glm::vec3(1, 0, 0),
@@ -62,6 +56,8 @@ GLint drawModeLoc;
 GLint orthoProjectionLoc;
 GLint textPosLoc;
 
+Mesh text;
+
 SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
@@ -72,6 +68,7 @@ SceneNode* lightNode2;
 SceneNode* lightNode3;
 
 SceneNode* textNode;
+
 
 double ballRadius = 3.0f;
 
@@ -170,7 +167,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     shader = new Gloom::Shader();
     shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
-    /* shader->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag"); */
 
     shaderText = new Gloom::Shader();
     shaderText->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag");
@@ -180,10 +176,11 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 	PNGImage img = loadPNGFile("res/textures/charmap.png");
 
-	float h = 39.0f, w = 29.0f;
 	std::string t = "Ninja";
 
-	Mesh text = generateTextGeometryBuffer(t, h/w, w * t.length()); 
+	text = generateTextGeometryBuffer(14); 
+	/* updateText(&text, t); */
+
 
 
 	textNode = createSceneNode();
@@ -204,6 +201,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	orthoProjectionLoc = glad_glGetUniformLocation(shaderText->get(), "orthoProjection");
 	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos");
 
+
+	orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight));
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
@@ -257,10 +256,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     ballNode->vertexArrayObjectID = ballVAO;
     ballNode->VAOIndexCount = sphere.indices.size();
-
-
-
-
 
 
     getTimeDeltaSeconds();
@@ -489,6 +484,7 @@ void renderNode(SceneNode* node) {
     switch(node->nodeType) {
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
+
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
@@ -511,11 +507,14 @@ void renderText(SceneNode * node) {
 	
 		shaderText->activate();
 		glBindTextureUnit(0, node->textureID);
+
+		setText(&text, fmt::format("{}", ballNode->position.x) );
+		updateTextureCoordinates(node->vertexArrayObjectID, text);
+
 		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */
 		/* glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection)); */
 		/* glUniformMatrix3fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(nm)); */
-		/* orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight), 0.1f, 100.0f); */
-		glUniformMatrix4fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(ortho));
+		glUniformMatrix4fv(orthoProjectionLoc, 1, GL_FALSE, glm::value_ptr(orthoProjection));
 		glUniform3fv(textPosLoc, 1, glm::value_ptr(node->position));
 		
 		/* glBindTexture(GL_TEXTURE_2D, node->textureID); */ 

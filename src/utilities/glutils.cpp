@@ -14,6 +14,13 @@ unsigned int generateAttribute(int id, int elementsPerEntry, std::vector<T> data
     return bufferID;
 }
 
+void updateTextureCoordinates(unsigned int VAO, Mesh mesh) {
+
+    glBindVertexArray(VAO);
+    generateAttribute(2, 2, mesh.textureCoordinates, false);
+	glBindVertexArray(0);
+}
+
 unsigned int generateBuffer(Mesh &mesh) {
     unsigned int vaoID;
     glGenVertexArrays(1, &vaoID);
