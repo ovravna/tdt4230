@@ -49,10 +49,6 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
         updateFrame(window);
         renderFrame(window);
 
-
-
-
-
         // Handle other events
         glfwPollEvents();
         handleKeyboardInput(window);
@@ -63,11 +59,3 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 }
 
 
-void handleKeyboardInput(GLFWwindow* window)
-{
-    // Use escape key for terminating the GLFW window
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    }
-}

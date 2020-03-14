@@ -7,3 +7,4 @@
 void initGame(GLFWwindow* window, CommandLineOptions options);
 void updateFrame(GLFWwindow* window);
 void renderFrame(GLFWwindow* window);
+void handleKeyboardInput(GLFWwindow* window);

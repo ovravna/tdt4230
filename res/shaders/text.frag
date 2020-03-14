@@ -9,6 +9,7 @@ void main() {
 
 		vec4 tex = texture(charTexture, textureCoordinates);
 		color = vec4(0, 1, 0, tex.a);
+
 }
 
 

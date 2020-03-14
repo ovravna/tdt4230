@@ -35,12 +35,13 @@ class Camera {
           glm::vec3 up;
           glm::vec3 right;
 
-          glm::vec3 front;
 
           int windowHeight, windowWidth;
           GLFWwindow *window;
 
 	public:
+
+        glm::vec3 front;
         glm::vec3 position;
 		Camera(GLFWwindow* window) {
 			this->window = window;
