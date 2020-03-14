@@ -23,6 +23,7 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
+	// glfwSwapInterval(0); disable vsync and 60 fps cap
     /* glDisable(GL_CULL_FACE); */
 
 

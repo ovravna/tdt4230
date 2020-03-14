@@ -15,13 +15,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <fmt/format.h>
 #include "gamelogic.h"
+#include "gametools.hpp"
 #include "sceneGraph.hpp"
+
+#include "utilities/imageLoader.hpp"
+#include "utilities/glfont.h"
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "utilities/imageLoader.hpp"
-#include "utilities/glfont.h"
+#include "camera.hpp"
 
 enum KeyFrameAction {
     BOTTOM, TOP
@@ -57,6 +61,8 @@ GLint drawModeLoc;
 GLint orthoProjectionLoc;
 GLint textPosLoc;
 
+Camera * cam;
+
 Mesh text;
 
 SceneNode* rootNode;
@@ -83,6 +89,8 @@ sf::Sound* sound;
 const glm::vec3 boxDimensions(180, 90, 90);
 const glm::vec3 padDimensions(30, 3, 40);
 
+glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
+
 glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
 glm::vec3 ballDirection(1, 1, 0.2f);
 
@@ -106,6 +114,7 @@ double gameElapsedTime = debug_startTime;
 double mouseSensitivity = 1.0;
 double lastMouseX = windowWidth / 2;
 double lastMouseY = windowHeight / 2;
+
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
@@ -126,33 +135,7 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
 }
 
 //// A few lines to help you if you've never used c++ structs
-// struct LightSource {
-//     bool a_placeholder_value;
-// };
-// LightSource lightSources[/*Put number of light sources you want here*/];
-GLint loadTextureFromImage(PNGImage img) {
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	// set the texture wrapping/filtering options (on the currently bound texture object)
 
-	/* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); */	
-	/* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); */
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// load and generate the texture
-	/* int width, height, nrChannels; */
-	/* unsigned char *data = stbi_load(texFile.c_str(), &width, &height, &nrChannels, 0); */
-	unsigned char * data = img.pixels.data();
-	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	return texture;
-
-}
 
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -161,11 +144,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         return;
     }
 
+
     options = gameOptions;
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
+	cam = new Camera(window);
+	/* cam->position = cameraPosition; */
 
     shader = new Gloom::Shader();
     shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
@@ -177,11 +163,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->activate();
 
 	PNGImage charmap = loadPNGFile("res/textures/charmap.png");
-
-	PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png");
-	PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png");
-
-	PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png");
+	/* PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png"); */
+	/* PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png"); */
+	/* PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png"); */
 
 	std::string t = "Ninja";
 
@@ -211,10 +195,11 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 
 	orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight));
+    projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
-    Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
+    Mesh box = cube(boxDimensions, glm::vec2(90), true, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
 
     // Fill buffers
@@ -234,9 +219,11 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     rootNode->children.push_back(textNode);
 
-    rootNode->children.push_back(boxNode);
-    rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+	ballNode->position = glm::vec3(0, 0, 3);
+
+    /* rootNode->children.push_back(padNode); */
+    /* rootNode->children.push_back(ballNode); */
 
 	
 	lightNode1->nodeType = POINT_LIGHT;
@@ -246,20 +233,21 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	/* lightNode1->position = glm::vec3(0, 50, 0); */
 	textNode->position = glm::vec3(10, windowHeight - 50, 0);
 
-	lightNode1->position = glm::vec3(0, 70, 0);
+	/* lightNode1->position = glm::vec3(0, 70, 0); */
 	lightNode2->position = glm::vec3(1, 0, 0);
 	lightNode3->position = glm::vec3(-1, 0, 0);
 
 
-	padNode->children.push_back(lightNode1);
+	/* boxNode->children.push_back(lightNode1); */
 	/* padNode->children.push_back(lightNode2); */
 	/* padNode->children.push_back(lightNode3); */
 
 
-	boxNode->nodeType = GEOMETRY_NORMAL_MAPPED;
-	boxNode->textureID = loadTextureFromImage(diffuseTexture);
-	boxNode->normalMapTextureID = loadTextureFromImage(normalMap);
-	boxNode->roughnessID = loadTextureFromImage(roughnessMap);
+	boxNode->nodeType = GEOMETRY;
+
+	/* boxNode->textureID = loadTextureFromImage(diffuseTexture); */
+	/* boxNode->normalMapTextureID = loadTextureFromImage(normalMap); */
+	/* boxNode->roughnessID = loadTextureFromImage(roughnessMap); */
 
 
 
@@ -436,20 +424,20 @@ void updateFrame(GLFWwindow* window) {
         }
     }
 
-    projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
 
-
-    glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
 
     // Some math to make the camera move in a nice way
     float lookRotation = -0.6 / (1 + exp(-5 * (padPositionX-0.5))) + 0.3;
     glm::mat4 cameraTransform = 
                     glm::rotate(0.3f + 0.2f * float(-padPositionZ*padPositionZ), glm::vec3(1, 0, 0)) *
-                    glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
-                    glm::translate(-cameraPosition);
+                    glm::rotate(lookRotation, glm::vec3(0, 1, 0));
+                    /* glm::translate(-cameraPosition); */
+
+	
+	/* view = glm::lookAt(glm::vec3(0), cameraPosition + glm::vec3(0.3f + 0.2f * float(-padPositionZ*padPositionZ), lookRotation, 0), glm::vec3(0, 1, 0)); */ 
 
     view = cameraTransform;
-	glUniform3fv(camLoc, 1, glm::value_ptr(cameraPosition)); 
+	glUniform3fv(camLoc, 1, glm::value_ptr(cam->position)); 
 
     // Move and rotate various SceneNodes
     boxNode->position = { 0, -10, -80 };
@@ -468,35 +456,10 @@ void updateFrame(GLFWwindow* window) {
 
 }
 
-void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
-    glm::mat4 transformationMatrix =
-              glm::translate(node->position)
-            * glm::translate(node->referencePoint)
-            * glm::rotate(node->rotation.y, glm::vec3(0,1,0))
-            * glm::rotate(node->rotation.x, glm::vec3(1,0,0))
-            * glm::rotate(node->rotation.z, glm::vec3(0,0,1))
-            * glm::scale(node->scale)
-            * glm::translate(-node->referencePoint);
-
-    node->currentTransformationMatrix = transformationThusFar * transformationMatrix;
-
-    switch(node->nodeType) {
-        case GEOMETRY: break;
-        case GEOMETRY_2D: break;
-        case GEOMETRY_NORMAL_MAPPED: break;
-        case POINT_LIGHT: break;
-        case SPOT_LIGHT: break;
-    }
-
-    for(SceneNode* child : node->children) {
-        updateNodeTransformations(child, node->currentTransformationMatrix);
-    }
-}
-
 void renderNode(SceneNode* node) {
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
 	auto nm = glm::mat3(glm::transpose(glm::inverse(node->currentTransformationMatrix)));
-	auto mv3x3 = glm::mat3(view * node->currentTransformationMatrix);
+	auto mv3x3 = glm::mat3(cam->getView() * node->currentTransformationMatrix);
     glUniformMatrix3fv(normalMatricLoc, 1, GL_FALSE, glm::value_ptr(nm));
     glUniformMatrix3fv(mv3x3Loc, 1, GL_FALSE, glm::value_ptr(mv3x3));
 
@@ -504,6 +467,7 @@ void renderNode(SceneNode* node) {
         case GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
 
+				glad_glUniform1i(drawModeLoc, 0);
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
@@ -542,9 +506,8 @@ void renderText(SceneNode * node) {
 		glBindTextureUnit(0, node->textureID);
 
 		int fps = std::round(1.0f / timeDelta);
-
-		/* clearText(&text); */
 		setText(&text, fmt::format("{}", fps) );
+
 		updateTextureCoordinates(node->vertexArrayObjectID, text);
 
 		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */
@@ -567,8 +530,8 @@ void renderFrame(GLFWwindow* window) {
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
 
-    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr());
+    glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr());
 
     glUniform4fv(6, 1, glm::value_ptr(lights[0]));
     glUniform4fv(7, 1, glm::value_ptr(lights[1]));
