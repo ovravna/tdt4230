@@ -45,7 +45,6 @@ GLFWwindow* initialise()
                                           windowTitle.c_str(),
                                           nullptr,
                                           nullptr);
-
     // Ensure the window is set up correctly
     if (!window)
     {

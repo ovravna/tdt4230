@@ -107,5 +107,5 @@ void main()
 	}
 
    	vec3 c = (ambient + diffuse + specular) * baseColor.xyz + dither(uv);
-	color = vec4(norm, 1.0);
+	color = vec4(c, 1.0);
 }

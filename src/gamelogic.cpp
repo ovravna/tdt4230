@@ -134,6 +134,24 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
+SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, SceneNodeType nodeType = GEOMETRY, glm::vec3 position = glm::vec3(0), glm::vec3 referencePoint = glm::vec3(0), glm::vec3 rotation = glm::vec3(0))  {
+
+	SceneNode * node = createSceneNode();
+	node->nodeType = nodeType;
+	node->position = position;
+	node->referencePoint = referencePoint;
+	node->rotation = rotation;
+	node->currentTransformationMatrix = glm::mat4(1);
+	
+    Mesh box = cube(dimentions);
+    node->vertexArrayObjectID = generateBuffer(box);
+	node->VAOIndexCount = box.indices.size();
+
+	parent->children.push_back(node);
+
+	return node;
+
+}
 //// A few lines to help you if you've never used c++ structs
 
 
@@ -211,8 +229,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     rootNode->children.push_back(textNode);
 
+	newBox(rootNode, glm::vec3(1), GEOMETRY, glm::vec3(0, 0, 4));
+
     rootNode->children.push_back(ballNode);
-	ballNode->position = glm::vec3(0, 0, 3);
+	ballNode->position = glm::vec3(0, 0, 1);
 	ballNode->nodeType = GEOMETRY;
 
     /* rootNode->children.push_back(padNode); */
@@ -226,7 +246,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	/* lightNode1->position = glm::vec3(0, 50, 0); */
 	textNode->position = glm::vec3(10, windowHeight - 50, 0);
 
-	/* lightNode1->position = glm::vec3(0, 70, 0); */
+	lightNode1->position = glm::vec3(0, 30, 0);
 	lightNode2->position = glm::vec3(1, 0, 0);
 	lightNode3->position = glm::vec3(-1, 0, 0);
 	ballNode->children.push_back(lightNode1);
