@@ -19,6 +19,8 @@ layout(binding = 3) uniform sampler2D roughnessMap;
 // general uniforms
 uniform layout(location = 6) vec4 lights[3];
 uniform layout(location = 9) vec3 lightColors[3];
+uniform layout(location = 12) vec4 color_in;
+
 uniform vec3 camPos;
 uniform vec3 ballPos;
 uniform int drawMode; // 0=3D, 1=2D
@@ -57,7 +59,7 @@ void main()
 		case 0: 
 			{
 			norm = normalize(normal);
-			baseColor = vec4(1);
+			baseColor = color_in;
 			}
 			break;
 

@@ -39,8 +39,10 @@ double padPositionZ = 0;
 unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
 
-glm::mat4 projection, view;
-glm::mat4 orthoProjection;
+glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
+glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight));
+glm::mat4 view;
+
 
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
@@ -66,13 +68,6 @@ Camera * cam;
 Mesh text;
 
 SceneNode* rootNode;
-SceneNode* boxNode;
-SceneNode* ballNode;
-SceneNode* padNode;
-
-SceneNode* lightNode1;
-SceneNode* lightNode2;
-SceneNode* lightNode3;
 
 SceneNode* textNode;
 
@@ -134,8 +129,7 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
-SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, SceneNodeType nodeType = GEOMETRY, glm::vec3 position = glm::vec3(0), glm::vec3 referencePoint = glm::vec3(0), glm::vec3 rotation = glm::vec3(0))  {
-
+SceneNode * newBall(SceneNode * parent, float radius, float slices, float layers, glm::vec3 position = glm::vec3(0), SceneNodeType nodeType = GEOMETRY, glm::vec3 referencePoint = glm::vec3(0), glm::vec3 rotation = glm::vec3(0))  {
 	SceneNode * node = createSceneNode();
 	node->nodeType = nodeType;
 	node->position = position;
@@ -143,7 +137,7 @@ SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, SceneNodeType nodeT
 	node->rotation = rotation;
 	node->currentTransformationMatrix = glm::mat4(1);
 	
-    Mesh box = cube(dimentions);
+    Mesh box = generateSphere(radius, slices, layers);
     node->vertexArrayObjectID = generateBuffer(box);
 	node->VAOIndexCount = box.indices.size();
 
@@ -152,33 +146,32 @@ SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, SceneNodeType nodeT
 	return node;
 
 }
-//// A few lines to help you if you've never used c++ structs
 
+SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, glm::vec3 position = glm::vec3(0), Mesh * mesh = nullptr, glm::vec4 color = glm::vec4(1), SceneNodeType nodeType = GEOMETRY, glm::vec3 referencePoint = glm::vec3(0), glm::vec3 rotation = glm::vec3(0))  {
 
-
-void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
-    buffer = new sf::SoundBuffer();
-    if (!buffer->loadFromFile("res/Hall of the Mountain King.ogg")) {
-        return;
-    }
-
-
-    options = gameOptions;
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPosCallback(window, mouseCallback);
-
-	cam = new Camera(window);
-	/* cam->position = cameraPosition; */
-
-    shader = new Gloom::Shader();
-    shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
-
-    shaderText = new Gloom::Shader();
-    shaderText->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag");
+	SceneNode * node = createSceneNode();
+	node->nodeType = nodeType;
+	node->position = position;
+	node->referencePoint = referencePoint;
+	node->rotation = rotation;
+	node->currentTransformationMatrix = glm::mat4(1);
+	node->color = color;
 	
+	/* if (mesh == nullptr) */ 
+	/* 	*mesh = cube(dimentions); */
 
-    shader->activate();
+	Mesh box = cube(dimentions);
+    node->vertexArrayObjectID = generateBuffer(box);
+	node->VAOIndexCount = box.indices.size();
+
+	parent->children.push_back(node);
+
+	return node;
+
+}
+
+
+SceneNode * initText(SceneNode * parent) {
 
 	PNGImage charmap = loadPNGFile("res/textures/charmap.png");
 	/* PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png"); */
@@ -192,7 +185,48 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	textNode->nodeType = GEOMETRY_2D;
 	textNode->textureID = loadTextureFromImage(charmap);
 	textNode->VAOIndexCount = text.indices.size();
-	textNode->position = glm::vec3(0);
+
+	textNode->position = glm::vec3(10, windowHeight - 50, 0);
+
+	addChild(parent, textNode);
+
+	return textNode;
+}
+
+SceneNode * newLight(SceneNode * parent, glm::vec3 position) {
+
+	SceneNode * lightNode = createSceneNode();
+	lightNode->nodeType = POINT_LIGHT;
+	lightNode->position = position;
+	addChild(parent, lightNode);
+	return lightNode;
+}
+
+//// A few lines to help you if you've never used c++ structs
+
+
+
+void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
+    buffer = new sf::SoundBuffer();
+    if (!buffer->loadFromFile("res/Hall of the Mountain King.ogg")) {
+        return;
+    }
+    options = gameOptions;
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetCursorPosCallback(window, mouseCallback);
+
+	cam = new Camera(window);
+	cam->position = glm::vec3(5, 1.8, 5);
+
+    shader = new Gloom::Shader();
+    shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
+
+    shaderText = new Gloom::Shader();
+    shaderText->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag");
+	
+
+    shader->activate();
 
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
 	mv3x3Loc = glad_glGetUniformLocation(shader->get(), "MV3x3");
@@ -204,75 +238,28 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	orthoProjectionLoc = glad_glGetUniformLocation(shaderText->get(), "orthoProjection");
 	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos");
 
-	orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight));
-    projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
 
-    // Create meshes
-    /* Mesh pad = cube(padDimensions, glm::vec2(30, 40), true); */
-    /* Mesh box = cube(boxDimensions, glm::vec2(90), true, false); */
-    Mesh sphere = generateSphere(1.0, 40, 40);
-
-    // Fill buffers
-    unsigned int ballVAO = generateBuffer(sphere);
-    /* unsigned int boxVAO  = generateBuffer(box); */
-    /* unsigned int padVAO  = generateBuffer(pad); */
 
     // Construct scene
     rootNode = createSceneNode();
-    /* boxNode  = createSceneNode(); */
-    /* padNode  = createSceneNode(); */
-    ballNode = createSceneNode();
 
-	lightNode1 = createSceneNode();
-	lightNode2 = createSceneNode();
-	lightNode3 = createSceneNode();
+	initText(rootNode);
+    /* newBall(rootNode, 1.0, 40, 40, glm::vec3(0, 0, 1)); */
+	/* newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, 4)); */
 
-    rootNode->children.push_back(textNode);
+	int size = 10;
+	for (int y = 0; y < size; y++) 
+		for (int x = 0; x < size; x++) {
+			newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y));
+			newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y));
+			newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y));
 
-	newBox(rootNode, glm::vec3(1), GEOMETRY, glm::vec3(0, 0, 4));
+		}
 
-    rootNode->children.push_back(ballNode);
-	ballNode->position = glm::vec3(0, 0, 1);
-	ballNode->nodeType = GEOMETRY;
+	newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), nullptr, glm::vec4(1, 0, 0, 1));  
 
-    /* rootNode->children.push_back(padNode); */
-    /* rootNode->children.push_back(ballNode); */
-
-	
-	lightNode1->nodeType = POINT_LIGHT;
-	lightNode2->nodeType = POINT_LIGHT;
-	lightNode3->nodeType = POINT_LIGHT;
-
-	/* lightNode1->position = glm::vec3(0, 50, 0); */
-	textNode->position = glm::vec3(10, windowHeight - 50, 0);
-
-	lightNode1->position = glm::vec3(0, 30, 0);
-	lightNode2->position = glm::vec3(1, 0, 0);
-	lightNode3->position = glm::vec3(-1, 0, 0);
-	ballNode->children.push_back(lightNode1);
-
-
-	/* boxNode->children.push_back(lightNode1); */
-	/* padNode->children.push_back(lightNode2); */
-	/* padNode->children.push_back(lightNode3); */
-
-
-	/* boxNode->nodeType = GEOMETRY; */
-
-	/* boxNode->textureID = loadTextureFromImage(diffuseTexture); */
-	/* boxNode->normalMapTextureID = loadTextureFromImage(normalMap); */
-	/* boxNode->roughnessID = loadTextureFromImage(roughnessMap); */
-
-
-
-    /* boxNode->vertexArrayObjectID = boxVAO; */
-    /* boxNode->VAOIndexCount = box.indices.size(); */
-
-    /* padNode->vertexArrayObjectID = padVAO; */
-    /* padNode->VAOIndexCount = pad.indices.size(); */
-
-    ballNode->vertexArrayObjectID = ballVAO;
-    ballNode->VAOIndexCount = sphere.indices.size();
+	 
+	newLight(rootNode, glm::vec3(0, 30, 0));
 
 
     getTimeDeltaSeconds();
@@ -306,6 +293,7 @@ void renderNode(SceneNode* node) {
             if(node->vertexArrayObjectID != -1) {
 
 				glad_glUniform1i(drawModeLoc, 0);
+    			glUniform4fv(12, 1, glm::value_ptr(node->color));
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
