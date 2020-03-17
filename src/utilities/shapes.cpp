@@ -88,6 +88,28 @@ Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inv
     return m;
 }
 
+
+Mesh plane() {
+	glm::vec4 vertices[] = {
+		glm::vec4(-1, -1, 0, 1),
+		glm::vec4( 1, -1, 0, 1),
+		glm::vec4(-1,  1, 0, 1),
+		glm::vec4( 1,  1, 0, 1),
+  	};
+	Mesh m; 
+	for (auto v: vertices) 
+		m.vertices.push_back(v);
+
+	std::vector<unsigned int> indices {
+		 0, 1, 2,
+		 2, 1, 3 
+	};
+
+	m.indices = indices;
+
+	return m;
+}
+
 Mesh generateSphere(float sphereRadius, int slices, int layers) {
     const unsigned int triangleCount = slices * layers * 2;
 

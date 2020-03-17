@@ -44,6 +44,7 @@ glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(windowWidth) 
 glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth), 0.0f, float(windowHeight));
 glm::mat4 view;
 
+Mesh portals[2];
 
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
@@ -142,7 +143,16 @@ SceneNode * newBall(SceneNode * parent, float radius, float slices, float layers
 }
 
 
-SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, glm::vec3 position = glm::vec3(0), Mesh * mesh = nullptr, glm::vec4 color = glm::vec4(1), SceneNodeType nodeType = GEOMETRY, glm::vec3 referencePoint = glm::vec3(0), glm::vec3 rotation = glm::vec3(0))  {
+SceneNode * newBox(
+		SceneNode * parent,
+		glm::vec3 dimentions,
+		glm::vec3 position = glm::vec3(0),
+		Mesh * mesh = nullptr,
+		glm::vec4 color = glm::vec4(1),
+		SceneNodeType nodeType = GEOMETRY,
+		glm::vec3 rotation = glm::vec3(0),
+		glm::vec3 referencePoint = glm::vec3(0)
+		)  {
 
 	SceneNode * node = createSceneNode();
 	node->nodeType = nodeType;
@@ -152,10 +162,12 @@ SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, glm::vec3 position 
 	node->currentTransformationMatrix = glm::mat4(1);
 	node->color = color;
 	
-	/* if (mesh == nullptr) */ 
-	/* 	*mesh = cube(dimentions); */
+	Mesh box;
+	if (mesh == nullptr) 
+		box = cube(dimentions);
+	else 
+		box = *mesh;
 
-	Mesh box = cube(dimentions);
     node->vertexArrayObjectID = generateBuffer(box);
 	node->VAOIndexCount = box.indices.size();
 
@@ -197,6 +209,10 @@ SceneNode * newLight(SceneNode * parent, glm::vec3 position, glm::vec4 color = g
 	return lightNode;
 }
 
+SceneNode * newPortal(SceneNode * parent, glm::vec3 position, glm::vec4 color, glm::vec3 rotation) {
+
+}
+
 //// A few lines to help you if you've never used c++ structs
 
 
@@ -218,7 +234,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	cam->position = glm::vec3(5, 1.8, 5);
 
     shader = new Gloom::Shader();
-    shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/textureBasic.frag");
+    shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
 
     shaderText = new Gloom::Shader();
     shaderText->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag");
@@ -241,8 +257,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 
 	PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png");
-	/* PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png"); */
-	/* PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png"); */
+	PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png");
+	PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png");
 	
 
 
@@ -253,30 +269,42 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /* newBall(rootNode, 1.0, 40, 40, glm::vec3(0, 0, 1)); */
 	/* newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, 4)); */
 
-	/* int size = 10; */
-	/* for (int y = 0; y < size; y++) */ 
-	/* 	for (int x = 0; x < size; x++) { */
-	/* 		float a = rand(x, y); */
-	/* 		float b = rand(2 * x, 2 * y); */
-	/* 		float c = rand(3 * x, 3 * y); */
-	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), nullptr, glm::vec4(a, b, c, 1), GEOMETRY); */
-	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), nullptr, glm::vec4(a, b, c, 1), GEOMETRY); */
-	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), nullptr, glm::vec4(a, b, c, 1), GEOMETRY); */
+	int size = 10;
+	auto box = cube(glm::vec3(1));
+	for (int y = 0; y < size; y++) 
+		for (int x = 0; x < size; x++) {
+			float a = rand(x, y);
+			float b = rand(2 * x, 2 * y);
+			float c = rand(3 * x, 3 * y);
+			newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), &box, glm::vec4(a, b, c, 1), GEOMETRY);
+			newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), &box, glm::vec4(a, b, c, 1), GEOMETRY);
+			newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), &box, glm::vec4(a, b, c, 1), GEOMETRY);
 
-	/* 	} */
+		}
 
-	auto o0 = newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), nullptr, glm::vec4(1, 0, 0, 1), GEOMETRY_STENCIL_OUTLINED);  
-	auto o1 = newBox(rootNode, glm::vec3(1), glm::vec3(2, 1, 6), nullptr, glm::vec4(0.2, 0.4, 1, 1), GEOMETRY_STENCIL_OUTLINED);  
+	auto o0 = newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), &box, glm::vec4(1, 0, 0, 1), GEOMETRY_NORMAL_MAPPED);  
+	auto o1 = newBox(rootNode, glm::vec3(1), glm::vec3(2, 1, 6), &box, glm::vec4(0.2, 0.4, 1, 1), GEOMETRY_NORMAL_MAPPED);  
 
 	o0->textureID = loadTextureFromImage(diffuseTexture);
-	/* o0->normalMapTextureID = loadTextureFromImage(normalMap); */
-	/* o0->roughnessID = loadTextureFromImage(roughnessMap); */
+	o0->normalMapTextureID = loadTextureFromImage(normalMap);
+	o0->roughnessID = loadTextureFromImage(roughnessMap);
 
 	o1->textureID = loadTextureFromImage(diffuseTexture);
+	o1->normalMapTextureID = loadTextureFromImage(normalMap);
+	o1->roughnessID = loadTextureFromImage(roughnessMap);
+
 	outlinedNodes[0] = o0;
 	outlinedNodes[1] = o1;
-	 
-	/* newLight(rootNode, glm::vec3(7, 10, 3), glm::vec4(1, 0, 0, 1)); */
+	
+	auto p = plane();
+	auto portal0 =  newBox(rootNode, glm::vec3(1), glm::vec3(1, 0, -3), &p, glm::vec4(0, 1, 0, 1), GEOMETRY, glm::vec3(0, 1, 0)); 
+
+	
+	portals[0] = plane();
+
+	portals[1] = plane();
+
+	newLight(rootNode, glm::vec3(7, 10, 3), glm::vec4(1, 1, 1, 1));
 	/* newLight(rootNode, glm::vec3(9, 13, 9), glm::vec4(0, 1, 0, 1)); */
 	/* newLight(rootNode, glm::vec3(1, 8, 12), glm::vec4(0, 0, 1, 1)); */
 
@@ -343,7 +371,7 @@ void renderNode(SceneNode* node) {
 			break;
         case POINT_LIGHT: 
 
-			node->color = glm::vec4(glm::normalize(cam->front), 1.0f);
+			/* node->color = glm::vec4(glm::normalize(cam->front), 1.0f); */
 
 			glUniform4fv(lightIdx + 6, 1, glm::value_ptr(node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1)));
     		glUniform4fv(lightIdx + 9, 1, glm::value_ptr(node->color));
@@ -602,10 +630,10 @@ void renderFrame(GLFWwindow* window) {
 
 
     glUniform3fv(camLoc, 1, glm::value_ptr(cam->position));
-    /* glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr()); */
-    /* glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr()); */
+    glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr());
+    glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr());
 
-	renderOut();
+	/* renderOut(); */
 
 
 
@@ -615,7 +643,7 @@ void renderFrame(GLFWwindow* window) {
 
 	lightIdx = 0;
 	lightFloat += 0.01;
-    /* renderNode(rootNode); */
+    renderNode(rootNode);
 	/* renderNodeOutlined(rootNode); */ 
 
 

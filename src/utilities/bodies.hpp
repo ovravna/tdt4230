@@ -21,7 +21,7 @@ struct SceneNodeData {
 
 
 
-template <class T>
+/* template <class T> */
 class Body {
 	protected:
 
@@ -42,7 +42,7 @@ class Body {
 
 	public:
 
-		class create;
+		/* class create; */
 
 		/* Body(SceneNode * parent) { */
 		/* 	init(parent); */
@@ -64,37 +64,36 @@ class Body {
 			setNodeValues(position, color, nodeType, referencePoint, rotation);
 		}
 
+		virtual Body * newChild();
 
-		/* static Body<T> create(SceneNode * parent) { */
-		/* 	return new Body<T>(parent); */
-		/* } */
 
-		Body<T> * rotate(glm::vec3 rotation) {
+		
+
+		static Body * create(SceneNode * parent) {
+			return new Body(parent);
+		}
+
+		Body * rotate(glm::vec3 rotation) {
 			node->rotation = rotation;
 			return this; 
 		}
 
-		Body<T> * move(glm::vec3 position) {
+		Body * move(glm::vec3 position) {
 			node->position = position;
 			return this; 
 		}
 		
-		Body<T> * generateMesh(T data) {
+		Body * generateMesh(void * data) {
 			createMesh(data);
 			return this; 
 		}
 
-		Body<T> * generateVAO() {
+		Body * generateVAO() {
 			generateVertexArrayObject(mesh);
 			return this; 
 		}
-
-
 		
-
-
-		
-		Body<T> * setNodeValues(
+		Body * setNodeValues(
 				glm::vec3 position = glm::vec3(0), 
 				glm::vec4 color = glm::vec4(1), 
 				SceneNodeType nodeType = GEOMETRY, 
@@ -123,36 +122,15 @@ class Body {
 		Mesh getMesh() { return mesh; }
 
 		
-		virtual Mesh createMesh(T data);
-		void generateMeshVertexArrayObject(T data) {
-			createMesh(data);
-			generateVertexArrayObject(mesh);
-		}
+		virtual Mesh createMesh(void * data);
+
+/* 		void generateMeshVertexArrayObject(void * data) { */
+/* 			createMesh(data); */
+/* 			generateVertexArrayObject(mesh); */
+/* 		} */
 
 };
-
-template <class T>
-class Body<T>::create {
-
-	public: 
-		create() {
-
-		}
-
-		Body<T> setParent(SceneNode * parent) {
-			this->parent = parent;
-		}
-		Body<T> build() {
-			return new Body<T>(parent);
-
-		}
-
-	private:
-		SceneNode * parent;
-
-
-}; 
-class Box : public Body<glm::vec3> {
+class Box : public Body {
 	public:
 		Box(SceneNode * parent,
 				glm::vec3 position = glm::vec3(0), 
@@ -163,9 +141,14 @@ class Box : public Body<glm::vec3> {
 			) : Body{parent, position, color, nodeType, referencePoint, rotation} { }
 
 
-		Mesh createMesh(glm::vec3 data) {
-			mesh = cube( data );
+		Mesh createMesh(void * data) {
+			glm::vec3 dimentions = *((glm::vec3 *) data);
+			mesh = cube( dimentions );
 			return mesh;
+		}
+
+		static Body * create(SceneNode * parent) {
+			return new Box(parent);
 		}
 };
 
@@ -175,3 +158,26 @@ class Box : public Body<glm::vec3> {
 /* 		return mesh; */
 /* 	} */
 /* }; */
+
+/* template <class T> */
+/* class Body<T>::create { */
+
+/* 	public: */ 
+/* 		create() { */
+
+/* 		} */
+
+/* 		Body<T> setParent(SceneNode * parent) { */
+/* 			this->parent = parent; */
+/* 		} */
+/* 		Body<T> build() { */
+/* 			return new Body<T>(parent); */
+
+/* 		} */
+
+/* 	private: */
+/* 		SceneNode * parent; */
+
+
+/* }; */ 
+

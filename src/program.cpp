@@ -22,11 +22,11 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glDepthFunc(GL_LESS);
 
     // Configure miscellaneous OpenGL settings
-    glDisable(GL_CULL_FACE);
+    /* glEnable(GL_CULL_FACE); */
 
-	glEnable(GL_STENCIL_TEST); 
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); 
+	/* glEnable(GL_STENCIL_TEST); */ 
+	/* glStencilFunc(GL_NOTEQUAL, 1, 0xFF); */
+	/* glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); */ 
 	/* glfwSwapInterval(1); //disable vsync and 60 fps cap */
     /* glDisable(GL_CULL_FACE); */
 
