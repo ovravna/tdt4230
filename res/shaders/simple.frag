@@ -109,5 +109,6 @@ void main()
 	}
 
    	vec3 c = (ambient + diffuse + specular) * baseColor.xyz + dither(uv);
+	/* float dist = 1 -  length(fragmentPos - camPos) / 10; */
 	color = vec4(c, 1.0);
 }

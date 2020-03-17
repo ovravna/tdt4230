@@ -205,6 +205,9 @@ SceneNode * newLight(SceneNode * parent, glm::vec3 position) {
 //// A few lines to help you if you've never used c++ structs
 
 
+float fract (float value) { return value - std::floor(value); }
+
+float rand(float x, float y) { return fract(sinf(x * 12.9898 + y * 78.233) * 43758.5453); }
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     buffer = new sf::SoundBuffer();
@@ -250,16 +253,19 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	int size = 10;
 	for (int y = 0; y < size; y++) 
 		for (int x = 0; x < size; x++) {
-			newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y));
-			newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y));
-			newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y));
+			float a = rand(x, y);
+			float b = rand(2 * x, 2 * y);
+			float c = rand(3 * x, 3 * y);
+			newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), nullptr, glm::vec4(a, b, c, 1));
+			newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), nullptr, glm::vec4(a, b, c, 1));
+			newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), nullptr, glm::vec4(a, b, c, 1));
 
 		}
 
 	newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), nullptr, glm::vec4(1, 0, 0, 1));  
 
 	 
-	newLight(rootNode, glm::vec3(0, 30, 0));
+	newLight(rootNode, glm::vec3(7, 30, 3));
 
 
     getTimeDeltaSeconds();
@@ -287,6 +293,7 @@ void renderNode(SceneNode* node) {
 
     glUniformMatrix3fv(normalMatricLoc, 1, GL_FALSE, glm::value_ptr(nm));
     glUniformMatrix3fv(mv3x3Loc, 1, GL_FALSE, glm::value_ptr(mv3x3));
+
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -357,6 +364,8 @@ void renderFrame(GLFWwindow* window) {
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
     glViewport(0, 0, windowWidth, windowHeight);
 
+
+    glUniform3fv(camLoc, 1, glm::value_ptr(cam->position));
     glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr());
     glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr());
 
@@ -384,5 +393,15 @@ void handleKeyboardInput(GLFWwindow* window)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+
+		auto pos = cam->position;
+		auto front = cam->front;
+		auto next = glm::floor(pos) + glm::round(2.0f * glm::normalize(front));
+		
+		newBox(rootNode, glm::vec3(1), glm::vec3(next.x, 1, next.z), nullptr, glm::vec4(0, 1, 0, 1));
+	}
+
 	cam->handleKeyboardInput();
 }

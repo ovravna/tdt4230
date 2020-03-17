@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 /* #include <glad/glad.h> */
 
+
 class Camera {
 
 	private:
@@ -41,6 +42,7 @@ class Camera {
 
 	public:
 
+		static glm::mat3 XZ; 
         glm::vec3 front;
         glm::vec3 position;
 		Camera(GLFWwindow* window) {
@@ -149,14 +151,12 @@ class Camera {
 				front +=  glm::normalize(glm::cross(front, right))* cameraSpeed;
 			}
 
-			auto xz = glm::mat3(1); 
-			xz[1][1] = 0; 
 
 
 			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-				position += cameraMoveSpeed * front * xz;
+				position += cameraMoveSpeed * front * XZ;
 			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-				position -= cameraMoveSpeed * front * xz;
+				position -= cameraMoveSpeed * front * XZ;
 			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 				position -= glm::normalize(glm::cross(front, up)) * cameraMoveSpeed;
 			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
@@ -187,6 +187,12 @@ class Camera {
 			tick();
 		}
 		
+};
+
+glm::mat3 Camera::XZ = {
+	1, 0, 0,
+	0, 0, 0,
+	0, 0, 1
 };
 
 
