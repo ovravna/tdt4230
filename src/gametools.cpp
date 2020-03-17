@@ -16,6 +16,7 @@ GLint loadTextureFromImage(PNGImage img) {
 	unsigned char * data = img.pixels.data();
 	
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width, img.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	/* glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, dbuffer->texId, 0); */
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	return texture;

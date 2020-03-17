@@ -18,18 +18,17 @@ layout(binding = 3) uniform sampler2D roughnessMap;
 
 // general uniforms
 uniform layout(location = 6) vec4 lights[3];
-uniform layout(location = 9) vec3 lightColors[3];
+uniform layout(location = 9) vec4 lightColors[3];
 uniform layout(location = 12) vec4 color_in;
 
 uniform vec3 camPos;
-uniform vec3 ballPos;
 uniform int drawMode; // 0=3D, 1=2D
+
+uniform vec3 ballPos;
+float ballRadius = 3.0f;
 
 vec3 norm;
 vec4 baseColor;
-
-const float ballRadius = 3.0f;
-
 
 vec3 lightPos = vec3(0, 0, 0);
 
@@ -40,17 +39,28 @@ vec3 ambient = ambientStrenght * ambientColor;
 vec3 diffuseColor = vec3(1, 1, 1);
 vec3 diffuse = vec3(0);
 
-float la = 0.001, lb = 10e-5, lc = 10e-4;
+float la = 0.001, lb = 10e-3, lc = 10e-3;
 
 
 float specularStrength = 0.4;
 vec3 specularColor = vec3(1, 1, 1);
 vec3 specular = vec3(0);
+float roughness;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 vec3 reject(vec3 from, vec3 onto) {	return from - onto*dot(from, onto)/dot(onto, onto); }
 
+// Pasted from learnopengl
+float near = 0.1; 
+float far  = 100.0; 
+  
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
+}
+// paste end
 
 void main()
 {
@@ -60,6 +70,7 @@ void main()
 			{
 			norm = normalize(normal);
 			baseColor = color_in;
+			roughness = 64;
 			}
 			break;
 
@@ -67,6 +78,7 @@ void main()
 			{
 			norm = TNB * normalize(texture(normalMap, uv).rgb * 2 - 1);
 			baseColor = texture(diffuseTexture, uv);
+			roughness = 5.0f / pow(length(texture(roughnessMap, uv)), 2);
 			}
 			break;
 
@@ -97,12 +109,11 @@ void main()
 
 		// Difuse
 		float diff = max(dot(norm, lightDir), 0.0);
-		diffuse += diff * lightColors[i] * L * shadow;
+		diffuse += diff * lightColors[i].xyz * L * shadow;
 
 		// Specular
 		vec3 viewDir = normalize(camPos - fragmentPos);
 		vec3 reflectDir = reflect(-lightDir, norm);
-		float roughness = drawMode == 2 ? 5.0f / pow(length(texture(roughnessMap, uv)), 2) : 512;
 		float spec = pow(max(dot(viewDir, reflectDir), 0.0), roughness);
 		specular += specularStrength * spec * specularColor * L * shadow;
 
@@ -110,5 +121,6 @@ void main()
 
    	vec3 c = (ambient + diffuse + specular) * baseColor.xyz + dither(uv);
 	/* float dist = 1 -  length(fragmentPos - camPos) / 10; */
+	/* float depth = LinearizeDepth(gl_FragCoord.z) / far; */
 	color = vec4(c, 1.0);
 }

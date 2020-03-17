@@ -26,6 +26,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "camera.hpp"
+#include "utilities/bodies.hpp"
 
 enum KeyFrameAction {
     BOTTOM, TOP
@@ -46,13 +47,16 @@ glm::mat4 view;
 
 glm::vec4 lights[3];
 glm::vec3 lightColors[3] {
-	glm::vec3(1, 1, 1),
+	glm::vec3(1, 0, 0),
 	glm::vec3(0, 1, 0),
 	glm::vec3(0, 0, 1),
 
 };
 
+SceneNode * outlinedNodes[2];
+
 int lightIdx = 0;
+float lightFloat = 0.0f;
 GLint normalMatricLoc;
 GLint mv3x3Loc;
 GLint camLoc;
@@ -64,30 +68,20 @@ GLint orthoProjectionLoc;
 GLint textPosLoc;
 
 Camera * cam;
-
 Mesh text;
 
 SceneNode* rootNode;
 
 SceneNode* textNode;
 
-
-double ballRadius = 3.0f;
 double timeDelta;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
 Gloom::Shader* shader;
 Gloom::Shader* shaderText;
+Gloom::Shader* shaderSingleColor;
 sf::Sound* sound;
-
-const glm::vec3 boxDimensions(180, 90, 90);
-const glm::vec3 padDimensions(30, 3, 40);
-
-glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
-
-glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
-glm::vec3 ballDirection(1, 1, 0.2f);
 
 CommandLineOptions options;
 
@@ -147,6 +141,7 @@ SceneNode * newBall(SceneNode * parent, float radius, float slices, float layers
 
 }
 
+
 SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, glm::vec3 position = glm::vec3(0), Mesh * mesh = nullptr, glm::vec4 color = glm::vec4(1), SceneNodeType nodeType = GEOMETRY, glm::vec3 referencePoint = glm::vec3(0), glm::vec3 rotation = glm::vec3(0))  {
 
 	SceneNode * node = createSceneNode();
@@ -170,14 +165,13 @@ SceneNode * newBox(SceneNode * parent, glm::vec3 dimentions, glm::vec3 position 
 
 }
 
+SceneNode * newBox(SceneNode * parent, glm::vec3 position, glm::vec4 color) {
+	return newBox(parent, glm::vec3(1), position, nullptr, color);    
+}
 
 SceneNode * initText(SceneNode * parent) {
 
 	PNGImage charmap = loadPNGFile("res/textures/charmap.png");
-	/* PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png"); */
-	/* PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png"); */
-	/* PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png"); */
-
 	text = generateTextGeometryBuffer(30); 
 
 	textNode = createSceneNode();
@@ -193,11 +187,12 @@ SceneNode * initText(SceneNode * parent) {
 	return textNode;
 }
 
-SceneNode * newLight(SceneNode * parent, glm::vec3 position) {
+SceneNode * newLight(SceneNode * parent, glm::vec3 position, glm::vec4 color = glm::vec4(1)) {
 
 	SceneNode * lightNode = createSceneNode();
 	lightNode->nodeType = POINT_LIGHT;
 	lightNode->position = position;
+	lightNode->color = color;
 	addChild(parent, lightNode);
 	return lightNode;
 }
@@ -223,10 +218,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	cam->position = glm::vec3(5, 1.8, 5);
 
     shader = new Gloom::Shader();
-    shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
+    shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/textureBasic.frag");
 
     shaderText = new Gloom::Shader();
     shaderText->makeBasicShader("res/shaders/text.vert", "res/shaders/text.frag");
+
+    shaderSingleColor = new Gloom::Shader();
+    shaderSingleColor->makeBasicShader("res/shaders/simple.vert", "res/shaders/singleColor.frag");
 	
 
     shader->activate();
@@ -242,6 +240,11 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos");
 
 
+	PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png");
+	/* PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png"); */
+	/* PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png"); */
+	
+
 
     // Construct scene
     rootNode = createSceneNode();
@@ -250,23 +253,36 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     /* newBall(rootNode, 1.0, 40, 40, glm::vec3(0, 0, 1)); */
 	/* newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, 4)); */
 
-	int size = 10;
-	for (int y = 0; y < size; y++) 
-		for (int x = 0; x < size; x++) {
-			float a = rand(x, y);
-			float b = rand(2 * x, 2 * y);
-			float c = rand(3 * x, 3 * y);
-			newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), nullptr, glm::vec4(a, b, c, 1));
-			newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), nullptr, glm::vec4(a, b, c, 1));
-			newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), nullptr, glm::vec4(a, b, c, 1));
+	/* int size = 10; */
+	/* for (int y = 0; y < size; y++) */ 
+	/* 	for (int x = 0; x < size; x++) { */
+	/* 		float a = rand(x, y); */
+	/* 		float b = rand(2 * x, 2 * y); */
+	/* 		float c = rand(3 * x, 3 * y); */
+	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), nullptr, glm::vec4(a, b, c, 1), GEOMETRY); */
+	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), nullptr, glm::vec4(a, b, c, 1), GEOMETRY); */
+	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), nullptr, glm::vec4(a, b, c, 1), GEOMETRY); */
 
-		}
+	/* 	} */
 
-	newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), nullptr, glm::vec4(1, 0, 0, 1));  
+	auto o0 = newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), nullptr, glm::vec4(1, 0, 0, 1), GEOMETRY_STENCIL_OUTLINED);  
+	auto o1 = newBox(rootNode, glm::vec3(1), glm::vec3(2, 1, 6), nullptr, glm::vec4(0.2, 0.4, 1, 1), GEOMETRY_STENCIL_OUTLINED);  
 
+	o0->textureID = loadTextureFromImage(diffuseTexture);
+	/* o0->normalMapTextureID = loadTextureFromImage(normalMap); */
+	/* o0->roughnessID = loadTextureFromImage(roughnessMap); */
+
+	o1->textureID = loadTextureFromImage(diffuseTexture);
+	outlinedNodes[0] = o0;
+	outlinedNodes[1] = o1;
 	 
-	newLight(rootNode, glm::vec3(7, 30, 3));
+	/* newLight(rootNode, glm::vec3(7, 10, 3), glm::vec4(1, 0, 0, 1)); */
+	/* newLight(rootNode, glm::vec3(9, 13, 9), glm::vec4(0, 1, 0, 1)); */
+	/* newLight(rootNode, glm::vec3(1, 8, 12), glm::vec4(0, 0, 1, 1)); */
 
+    /* glUniform3fv(9, 1, glm::value_ptr(lightColors[0])); */
+    /* glUniform3fv(10, 1, glm::value_ptr(lightColors[1])); */
+    /* glUniform3fv(11, 1, glm::value_ptr(lightColors[2])); */
 
     getTimeDeltaSeconds();
 
@@ -320,10 +336,30 @@ void renderNode(SceneNode* node) {
 			}
 
 			break;
+		case GEOMETRY_STENCIL_OUTLINED:
+			
+			break;
 		case GEOMETRY_2D:
 			break;
         case POINT_LIGHT: 
-			lights[lightIdx++] = node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1);
+
+			node->color = glm::vec4(glm::normalize(cam->front), 1.0f);
+
+			glUniform4fv(lightIdx + 6, 1, glm::value_ptr(node->currentTransformationMatrix * glm::vec4(0, 0, 0, 1)));
+    		glUniform4fv(lightIdx + 9, 1, glm::value_ptr(node->color));
+			
+			/* node->color *= glm::rotate(sinf(lightFloat), glm::vec3(1) ); */
+
+			/* node->color.r = sinf(lightFloat) / 2 + 0.5f; */
+			/* node->color.g = cosf(lightFloat) / 2 + 0.5f; */
+		
+			/* node->color.b = sinf(lightFloat) / 2 + 0.5f; */
+			/* if (node->color[lightIdx] >= 1.0) */
+				/* node->color[lightIdx] = 0.0; */
+
+
+			lightIdx++;
+
 			break;
         case SPOT_LIGHT: break;
     }
@@ -331,6 +367,125 @@ void renderNode(SceneNode* node) {
     for(SceneNode* child : node->children) {
         renderNode(child);
     }
+}
+
+void getOutlined(SceneNode * node, std::vector<SceneNode*> * accumulator) {
+	if (node->nodeType == GEOMETRY_STENCIL_OUTLINED)
+		accumulator->push_back(node);
+
+	
+    for(SceneNode* child : node->children) {
+        getOutlined(child, accumulator);
+    }
+
+
+}
+
+void renderNodeOutlined(SceneNode * node) {
+	std::vector<SceneNode*> * accumulator = new std::vector<SceneNode*>();
+	getOutlined(node, accumulator);
+
+	glad_glUniform1i(drawModeLoc, 0);
+
+	for (SceneNode * node : *accumulator) {
+
+		glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should pass the stencil test
+		glStencilMask(0xFF); // enable writing to the stencil buffer
+		shader->activate();
+		
+		glUniform4fv(12, 1, glm::value_ptr(node->color));
+		glBindVertexArray(node->vertexArrayObjectID);
+		glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+	}
+	for (SceneNode * node : *accumulator) {
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00); // disable writing to the stencil buffer
+		glDisable(GL_DEPTH_TEST);
+		shaderSingleColor->activate();
+
+		/* node->currentTransformationMatrix *= glm::scale(glm::vec3(1.5)); */
+		glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(glm::scale(node->currentTransformationMatrix, glm::vec3(1.2))));
+		/* glUniform4fv(12, 1, glm::value_ptr(node->color)); */
+		glBindVertexArray(node->vertexArrayObjectID);
+		glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+		//clean up 
+		shader->activate();
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);   
+		glEnable(GL_DEPTH_TEST);  
+
+	}
+
+}
+
+void renderOutlined(SceneNode * node ) {
+	glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+
+	auto nm = glm::mat3(glm::transpose(glm::inverse(node->currentTransformationMatrix)));
+	auto mv3x3 = glm::mat3(cam->getView() * node->currentTransformationMatrix);
+
+    glUniformMatrix3fv(normalMatricLoc, 1, GL_FALSE, glm::value_ptr(nm));
+    glUniformMatrix3fv(mv3x3Loc, 1, GL_FALSE, glm::value_ptr(mv3x3));
+
+
+	switch (node->nodeType) {
+
+		
+
+		case GEOMETRY_STENCIL_OUTLINED:
+			if (node->vertexArrayObjectID != -1) {
+
+				glad_glUniform1i(drawModeLoc, 0);
+				/* glEnable(GL_DEPTH_TEST); */
+				/* glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); */  
+				  
+				/* glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); */ 
+
+				/* glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix)); */
+
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
+				glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should pass the stencil test
+				glStencilMask(0xFF); // enable writing to the stencil buffer
+				shader->activate();
+				
+				glUniform4fv(12, 1, glm::value_ptr(node->color));
+				glBindVertexArray(node->vertexArrayObjectID);
+				glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+
+				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+				glStencilMask(0x00); // disable writing to the stencil buffer
+				glDisable(GL_DEPTH_TEST);
+				shaderSingleColor->activate();
+
+				node->currentTransformationMatrix *= glm::scale(glm::vec3(1.5));
+				glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+				/* glUniform4fv(12, 1, glm::value_ptr(node->color)); */
+				glBindVertexArray(node->vertexArrayObjectID);
+				glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+				//clean up 
+				shader->activate();
+				glStencilMask(0xFF);
+				glStencilFunc(GL_ALWAYS, 1, 0xFF);   
+				glEnable(GL_DEPTH_TEST);  
+
+				 
+			}
+			break;
+		default:
+			break;
+	}
+
+    for(SceneNode* child : node->children) {
+        renderOutlined(child);
+    }
+
 }
 
 void renderText(SceneNode * node) {
@@ -358,6 +513,87 @@ void renderText(SceneNode * node) {
 		shader->activate();
 }
 
+void renderOut() {
+
+		/* shaderSingleColor.setMat4("view", view); */
+        /* shaderSingleColor.setMat4("projection", projection); */
+
+        shader->activate();
+
+		glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr());
+		glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr());
+
+        // draw floor as normal, but don't write the floor to the stencil buffer, we only care about the containers. We set its mask to 0x00 to not write to the stencil buffer.
+        glStencilMask(0x00);
+        // floor
+        /* glBindVertexArray(planeVAO); */
+        /* glBindTexture(GL_TEXTURE_2D, floorTexture); */
+        /* shader.setMat4("model", glm::mat4(1.0f)); */
+        /* glDrawArrays(GL_TRIANGLES, 0, 6); */
+        /* glBindVertexArray(0); */
+
+        // 1st. render pass, draw objects as normal, writing to the stencil buffer
+        // --------------------------------------------------------------------
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+		auto cube = outlinedNodes[0];
+        // cubes
+        glBindVertexArray(cube->vertexArrayObjectID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cube->textureID);
+        /* model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f)); */
+
+		glUniform4fv(12, 1, glm::value_ptr(cube->color));
+        /* shader.setMat4("model", model); */
+		glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(cube->currentTransformationMatrix));
+        /* glDrawArrays(GL_TRIANGLES, 0, 36); */
+		glDrawElements(GL_TRIANGLES, cube->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+		cube = outlinedNodes[1];
+		glUniform4fv(12, 1, glm::value_ptr(cube->color));
+        /* model = glm::mat4(1.0f); */
+        /* model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f)); */
+        /* shader.setMat4("model", model); */
+		glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(cube->currentTransformationMatrix));
+        /* glDrawArrays(GL_TRIANGLES, 0, 36); */
+		glDrawElements(GL_TRIANGLES, cube->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+        // 2nd. render pass: now draw slightly scaled versions of the objects, this time disabling stencil writing.
+        // Because the stencil buffer is now filled with several 1s. The parts of the buffer that are 1 are not drawn, thus only drawing 
+        // the objects' size differences, making it look like borders.
+        // -----------------------------------------------------------------------------------------------------------------------------
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
+        shaderSingleColor->activate();
+        float scale = 1.1;
+        // cubes
+		cube = outlinedNodes[0];
+        glBindVertexArray(cube->vertexArrayObjectID);
+        glBindTexture(GL_TEXTURE_2D, cube->textureID);
+        /* model = glm::mat4(1.0f); */
+        /* model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f)); */
+        /* model = glm::scale(model, glm::vec3(scale, scale, scale)); */
+        /* shaderSingleColor.setMat4("model", model); */
+		/* cube->currentTransformationMatrix *= glm::scale(glm::vec3(scale)); */
+		cube->currentTransformationMatrix = glm::scale(cube->currentTransformationMatrix, glm::vec3(scale, scale, scale));
+		glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(cube->currentTransformationMatrix));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+		/* glDrawElements(GL_TRIANGLES, cube->VAOIndexCount, GL_UNSIGNED_INT, nullptr); */
+        /* model = glm::mat4(1.0f); */
+        /* model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f)); */
+        /* model = glm::scale(model, glm::vec3(scale, scale, scale)); */
+        /* shaderSingleColor.setMat4("model", model); */
+		cube->currentTransformationMatrix = glm::scale(cube->currentTransformationMatrix, glm::vec3(scale, scale, scale));
+		glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(cube->currentTransformationMatrix));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+		/* glDrawElements(GL_TRIANGLES, cube->VAOIndexCount, GL_UNSIGNED_INT, nullptr); */
+        glBindVertexArray(0);
+        glStencilMask(0xFF);
+        glEnable(GL_DEPTH_TEST);
+
+
+}
 
 void renderFrame(GLFWwindow* window) {
     int windowWidth, windowHeight;
@@ -366,22 +602,26 @@ void renderFrame(GLFWwindow* window) {
 
 
     glUniform3fv(camLoc, 1, glm::value_ptr(cam->position));
-    glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr());
-    glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr());
+    /* glUniformMatrix4fv(4, 1, GL_FALSE, cam->getViewPtr()); */
+    /* glUniformMatrix4fv(5, 1, GL_FALSE, cam->getProjectionPtr()); */
 
-    glUniform4fv(6, 1, glm::value_ptr(lights[0]));
-    glUniform4fv(7, 1, glm::value_ptr(lights[1]));
-    glUniform4fv(8, 1, glm::value_ptr(lights[2]));
+	renderOut();
 
-    glUniform3fv(9, 1, glm::value_ptr(lightColors[0]));
-    glUniform3fv(10, 1, glm::value_ptr(lightColors[1]));
-    glUniform3fv(11, 1, glm::value_ptr(lightColors[2]));
 
-	glUniform3fv(ballLoc, 1, glm::value_ptr(ballPosition));
+
+    /* glUniform4fv(6, 1, glm::value_ptr(lights[0])); */
+    /* glUniform4fv(7, 1, glm::value_ptr(lights[1])); */
+    /* glUniform4fv(8, 1, glm::value_ptr(lights[2])); */
 
 	lightIdx = 0;
-    renderNode(rootNode);
+	lightFloat += 0.01;
+    /* renderNode(rootNode); */
+	/* renderNodeOutlined(rootNode); */ 
+
+
+
 	renderText(textNode);
+
 
 }
 
@@ -400,7 +640,7 @@ void handleKeyboardInput(GLFWwindow* window)
 		auto front = cam->front;
 		auto next = glm::floor(pos) + glm::round(2.0f * glm::normalize(front));
 		
-		newBox(rootNode, glm::vec3(1), glm::vec3(next.x, 1, next.z), nullptr, glm::vec4(0, 1, 0, 1));
+		newBox(rootNode, glm::vec3(1), glm::vec3(next.x, 1, next.z), nullptr, glm::vec4(0.2, 0.3, 1, 1));
 	}
 
 	cam->handleKeyboardInput();
