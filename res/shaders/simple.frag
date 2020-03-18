@@ -67,6 +67,7 @@ void main()
 
 	switch (drawMode) {
 		case 0: 
+		case 3: 
 			{
 			norm = normalize(normal);
 			baseColor = color_in;
@@ -96,8 +97,8 @@ void main()
 		vec3 lightVec = lightPos - fragmentPos;
 		vec3 lightDir = normalize(lightVec);
 
-		// Shadows 
-		float r = length(reject(ballVec, lightVec));
+	// Shadows 
+	float r = length(reject(ballVec, lightVec));
 		float shadow = 1;
 		if (r < ballRadius) shadow =  pow(r / ballRadius, 2) + 1 / length(lightVec);
 		if (length(ballVec) >= length(lightVec)) shadow = 1;

@@ -64,11 +64,6 @@ class Body {
 			setNodeValues(position, color, nodeType, referencePoint, rotation);
 		}
 
-		virtual Body * newChild();
-
-
-		
-
 		static Body * create(SceneNode * parent) {
 			return new Body(parent);
 		}
@@ -83,7 +78,7 @@ class Body {
 			return this; 
 		}
 		
-		Body * generateMesh(void * data) {
+		Body * generateMesh(void * data = nullptr) {
 			createMesh(data);
 			return this; 
 		}
@@ -122,7 +117,7 @@ class Body {
 		Mesh getMesh() { return mesh; }
 
 		
-		virtual Mesh createMesh(void * data);
+		virtual Mesh createMesh(void * data = nullptr);
 
 /* 		void generateMeshVertexArrayObject(void * data) { */
 /* 			createMesh(data); */
@@ -141,8 +136,12 @@ class Box : public Body {
 			) : Body{parent, position, color, nodeType, referencePoint, rotation} { }
 
 
-		Mesh createMesh(void * data) {
-			glm::vec3 dimentions = *((glm::vec3 *) data);
+		Mesh createMesh(void * data = nullptr) {
+			glm::vec3 dimentions;
+			if (data == nullptr)
+				dimentions = glm::vec3(1);
+			else 
+				dimentions = *((glm::vec3 *) data);
 			mesh = cube( dimentions );
 			return mesh;
 		}

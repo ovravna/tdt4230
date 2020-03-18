@@ -54,6 +54,9 @@ glm::vec3 lightColors[3] {
 
 };
 
+SceneNode * portal0, * portal1;
+glm::mat4 portalViewMatrix;
+
 SceneNode * outlinedNodes[2];
 
 int lightIdx = 0;
@@ -61,6 +64,7 @@ float lightFloat = 0.0f;
 GLint normalMatricLoc;
 GLint mv3x3Loc;
 GLint camLoc;
+GLint portalLoc;
 GLint ballLoc;
 GLint lightSourcesLoc;
 GLint drawModeLoc;
@@ -213,11 +217,29 @@ SceneNode * newPortal(SceneNode * parent, glm::vec3 position, glm::vec4 color, g
 
 }
 
+/**
+ * Compute a world2camera view matrix to see from portal 'dst', given
+ * the original view and the 'src' portal position.
+ */
+glm::mat4 portalView(glm::mat4 origView, SceneNode* src, SceneNode* dst) {
+  glm::mat4 mv = origView * src->currentTransformationMatrix;
+  glm::mat4 portalCam =
+    // 3. transformation from source portal to the camera - it's the
+    //    first portal's ModelView matrix:
+    mv
+    // 2. object is front-facing, the camera is facing the other way:
+    * glm::rotate(glm::mat4(1.0), glm::radians(180.0f), glm::vec3(0.0,1.0,0.0))
+    // 1. go the destination portal; using inverse, because camera
+    //    transformations are reversed compared to object
+    //    transformations:
+    * glm::inverse(dst->currentTransformationMatrix)
+    ;
+  return portalCam;
+}
 //// A few lines to help you if you've never used c++ structs
 
 
 float fract (float value) { return value - std::floor(value); }
-
 float rand(float x, float y) { return fract(sinf(x * 12.9898 + y * 78.233) * 43758.5453); }
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -231,7 +253,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetCursorPosCallback(window, mouseCallback);
 
 	cam = new Camera(window);
-	cam->position = glm::vec3(5, 1.8, 5);
+	cam->position = glm::vec3(1, 0.5, 0);
+	cam->front = glm::vec3(1, 0, -1);
 
     shader = new Gloom::Shader();
     shader->makeBasicShader("res/shaders/simple.vert", "res/shaders/simple.frag");
@@ -248,6 +271,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	normalMatricLoc = glad_glGetUniformLocation(shader->get(), "normalMatrix");
 	mv3x3Loc = glad_glGetUniformLocation(shader->get(), "MV3x3");
 	camLoc = glad_glGetUniformLocation(shader->get(), "camPos");
+	portalLoc = glad_glGetUniformLocation(shader->get(), "portalView");
 	ballLoc = glad_glGetUniformLocation(shader->get(), "ballPos");
 	lightSourcesLoc = glad_glGetUniformLocation(shader->get(), "lightSources");
 	drawModeLoc = glad_glGetUniformLocation(shader->get(), "drawMode");
@@ -256,9 +280,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	textPosLoc = glad_glGetUniformLocation(shaderText->get(), "textPos");
 
 
-	PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png");
-	PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png");
-	PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png");
+	/* PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png"); */
+	/* PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png"); */
+	/* PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png"); */
 	
 
 
@@ -271,39 +295,43 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 	int size = 10;
 	auto box = cube(glm::vec3(1));
-	for (int y = 0; y < size; y++) 
-		for (int x = 0; x < size; x++) {
-			float a = rand(x, y);
-			float b = rand(2 * x, 2 * y);
-			float c = rand(3 * x, 3 * y);
-			newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), &box, glm::vec4(a, b, c, 1), GEOMETRY);
-			newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), &box, glm::vec4(a, b, c, 1), GEOMETRY);
-			newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), &box, glm::vec4(a, b, c, 1), GEOMETRY);
+	/* for (int y = 0; y < size; y++) */ 
+	/* 	for (int x = 0; x < size; x++) { */
+	/* 		float a = rand(x, y); */
+	/* 		float b = rand(2 * x, 2 * y); */
+	/* 		float c = rand(3 * x, 3 * y); */
+	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(x, 0, y), &box, glm::vec4(a, b, c, 1), GEOMETRY); */
+	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(size, x, y), &box, glm::vec4(a, b, c, 1), GEOMETRY); */
+	/* 		newBox(rootNode, glm::vec3(1), glm::vec3(0, x, y), &box, glm::vec4(a, b, c, 1), GEOMETRY); */
 
-		}
+	/* 	} */
 
-	auto o0 = newBox(rootNode, glm::vec3(1), glm::vec3(3, 1, 3), &box, glm::vec4(1, 0, 0, 1), GEOMETRY_NORMAL_MAPPED);  
-	auto o1 = newBox(rootNode, glm::vec3(1), glm::vec3(2, 1, 6), &box, glm::vec4(0.2, 0.4, 1, 1), GEOMETRY_NORMAL_MAPPED);  
+	auto o0 = newBox(rootNode, glm::vec3(1), glm::vec3(3, 0, 3), &box, glm::vec4(1, 0, 0, 1), GEOMETRY);  
+	auto o1 = newBox(rootNode, glm::vec3(1), glm::vec3(2, 0, 6), &box, glm::vec4(0.2, 0.4, 1, 1), GEOMETRY);  
 
-	o0->textureID = loadTextureFromImage(diffuseTexture);
-	o0->normalMapTextureID = loadTextureFromImage(normalMap);
-	o0->roughnessID = loadTextureFromImage(roughnessMap);
+	/* o0->textureID = loadTextureFromImage(diffuseTexture); */
+	/* o0->normalMapTextureID = loadTextureFromImage(normalMap); */
+	/* o0->roughnessID = loadTextureFromImage(roughnessMap); */
 
-	o1->textureID = loadTextureFromImage(diffuseTexture);
-	o1->normalMapTextureID = loadTextureFromImage(normalMap);
-	o1->roughnessID = loadTextureFromImage(roughnessMap);
+	/* o1->textureID = loadTextureFromImage(diffuseTexture); */
+	/* o1->normalMapTextureID = loadTextureFromImage(normalMap); */
+	/* o1->roughnessID = loadTextureFromImage(roughnessMap); */
 
 	outlinedNodes[0] = o0;
 	outlinedNodes[1] = o1;
 	
 	auto p = plane();
-	auto portal0 =  newBox(rootNode, glm::vec3(1), glm::vec3(1, 0, -3), &p, glm::vec4(0, 1, 0, 1), GEOMETRY, glm::vec3(0, 1, 0)); 
+	portal0 =  newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, -2), &p, glm::vec4(0, 1, 0, 1), GEOMETRY_PORTAL, glm::vec3(0, M_PI_2, 0)); 
+	portal1 =  newBox(rootNode, glm::vec3(1), glm::vec3(2, 0, -4), &p, glm::vec4(0, 1, 0, 1), GEOMETRY_PORTAL, glm::vec3(0, 0, 0)); 
+
+	/* Box::create(rootNode) */
+	/* 	->rotate(glm::vec3(0, M_PI_4, 0)) */
+	/* 	->move(glm::vec3(1.f, 0.f, -4.f)) */
+	/* 	->generateMesh() */
+	/* 	->generateVAO(); */
+		
 
 	
-	portals[0] = plane();
-
-	portals[1] = plane();
-
 	newLight(rootNode, glm::vec3(7, 10, 3), glm::vec4(1, 1, 1, 1));
 	/* newLight(rootNode, glm::vec3(9, 13, 9), glm::vec4(0, 1, 0, 1)); */
 	/* newLight(rootNode, glm::vec3(1, 8, 12), glm::vec4(0, 0, 1, 1)); */
@@ -335,15 +363,23 @@ void renderNode(SceneNode* node) {
 	auto nm = glm::mat3(glm::transpose(glm::inverse(node->currentTransformationMatrix)));
 	auto mv3x3 = glm::mat3(cam->getView() * node->currentTransformationMatrix);
 
+	portalViewMatrix = portalView(cam->getView(), portal0, portal1); 
+
     glUniformMatrix3fv(normalMatricLoc, 1, GL_FALSE, glm::value_ptr(nm));
     glUniformMatrix3fv(mv3x3Loc, 1, GL_FALSE, glm::value_ptr(mv3x3));
 
 
     switch(node->nodeType) {
         case GEOMETRY:
+        case GEOMETRY_PORTAL:
             if(node->vertexArrayObjectID != -1) {
 
-				glad_glUniform1i(drawModeLoc, 0);
+				if (node->nodeType == GEOMETRY_PORTAL) 
+					glad_glUniform1i(drawModeLoc, 3);
+				else 
+					glad_glUniform1i(drawModeLoc, 0);
+				glUniformMatrix4fv(portalLoc, 1, GL_FALSE, glm::value_ptr(portalViewMatrix));
+
     			glUniform4fv(12, 1, glm::value_ptr(node->color));
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);

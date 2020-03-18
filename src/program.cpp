@@ -22,7 +22,7 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glDepthFunc(GL_LESS);
 
     // Configure miscellaneous OpenGL settings
-    /* glEnable(GL_CULL_FACE); */
+    glEnable(GL_CULL_FACE);
 
 	/* glEnable(GL_STENCIL_TEST); */ 
 	/* glStencilFunc(GL_NOTEQUAL, 1, 0xFF); */

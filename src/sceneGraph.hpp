@@ -14,10 +14,12 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, GEOMETRY_2D, GEOMETRY_NORMAL_MAPPED, GEOMETRY_STENCIL_OUTLINED, POINT_LIGHT, SPOT_LIGHT, 
+	GEOMETRY, GEOMETRY_2D, GEOMETRY_NORMAL_MAPPED, GEOMETRY_STENCIL_OUTLINED, GEOMETRY_PORTAL, POINT_LIGHT, SPOT_LIGHT, 
 };
 
-struct SceneNode {
+class SceneNode {
+
+public:
 	SceneNode() {
 		position = glm::vec3(0, 0, 0);
 		rotation = glm::vec3(0, 0, 0);
