@@ -7,6 +7,7 @@
 #include "utilities/imageLoader.hpp"
 #include "utilities/mesh.h"
 #include "utilities/shapes.h"
+#include "shader.hpp"
 
 
 
@@ -22,15 +23,15 @@ protected:
 	Entity() : SceneNode{} {
 	}
 
+	Entity * root;
+	
+	void setRoot(Entity * root) {
+		this->root = root;
+	}
+
 public:
 	Mesh mesh;
 	Entity * parent; 
-
-	static Entity& create() {
-		Entity * e = new Entity();
-		/* addChild(parent, e); */
-		return *e;
-	}
 
 	Entity& setMesh(Mesh mesh) {
 		this->mesh = mesh;
@@ -39,14 +40,33 @@ public:
 		return *this;
 	}
 
-	Entity& setTexure(PNGImage img) {
-		textureID = loadTextureFromImage(img);
+	Entity& setTexure(int id, TextureType type = DIFFUSE) {
+		switch (type) {
+			case DIFFUSE:
+				textureID = id;
+				break;
+			case NORMAL:
+				normalMapTextureID = id;
+				break;
+			case ROUGHNESS:
+				roughnessID = id;
+				break;
+		}
 		return *this;
+	}
+	Entity& setTexure(PNGImage img, TextureType type = DIFFUSE) {
+		auto id = loadTextureFromImage(img);
+		return setTexure(id, type);
+	}
+
+	Entity& setTexure(std::string path, TextureType type = DIFFUSE) {
+		auto img = loadPNGFile(path);
+		return setTexure(img, type);
 	}
 
 	Entity& setParent(Entity * node) {
 		parent = node;
-		addChild(node, this);
+		addChild(parent, this);
 		return *this;
 	}
 
@@ -110,11 +130,22 @@ public:
 	Entity& rotate(float x, float y, float z) {
 		return rotate(glm::vec3(x, y, z));
 	}
+	
+	/* Entity& rotate(float x, float y, float z) { */
+	/* 	return rotate(glm::vec3(x, y, z)); */
+	/* } */
+
+	Entity * get() { return this; }
+
+	template<class E>
+	E * get() { return (E*)(this); }
+
+	template<class E>
+	E& as() { return (E&)(*this); }
 
 
-	Entity * get() {
-		return this;
-	}
+
+
 
 	glm::mat4 getModel() { return currentTransformationMatrix; }
 	float * getModelPtr() { return glm::value_ptr(currentTransformationMatrix); }
@@ -141,11 +172,11 @@ protected:
 	
 public:
 
-	static Entity& create(Mesh mesh) {
+	static Text& create(Mesh mesh) {
 		auto e = new Text(mesh);
 		return *e;
 	}
-	static Entity& create(size_t size = 30) {
+	static Text& create(size_t size = 30) {
 		auto mesh = generateTextGeometryBuffer(size);
 		return Text::create(mesh);
 	}
@@ -179,46 +210,83 @@ public:
 	}
 };
 
+class RootEntity : public Entity {
+
+protected:
+	RootEntity() : Entity{ } {
+		setRoot(this);
+	}
+	
+public:
+	static RootEntity& create() {
+		auto e = new RootEntity();
+		return *e;
+	}
+
+	void drawAllGeometry() {
+
+	}
+	
+	void drawAllText() {
+
+	}
+
+	RootEntity * get() { return this; }
+};
+
+class Light : public Entity {
+
+protected:
+	Light() : Entity{ } {
+		setType(POINT_LIGHT);
+	}
+	
+public:
+	static Light& create() {
+		auto e = new Light();
+		return *e;
+	}
+};
+
 class Cube : public Entity {
 
 protected:
 	Cube(Mesh mesh) : Entity{ mesh} {}
 	
 public:
-	static Entity& create(Mesh mesh) {
+	static Cube& create(Mesh mesh) {
 		auto e = new Cube(mesh);
 		return *e;
 	}
-	static Entity& create(glm::vec3 dimentions) {
+	static Cube& create(glm::vec3 dimentions) {
 		auto mesh = cube(dimentions);
 		return Cube::create(mesh);
 	}
-	static Entity& create(float x, float y, float z) {
+	static Cube& create(float x, float y, float z) {
 		return Cube::create(glm::vec3(x, y, z));
 	}
-	static Entity& create(float dimentions = 1.0f) {
+	static Cube& create(float dimentions = 1.0f) {
 		return Cube::create(glm::vec3(dimentions));
 	}
+
+	Cube * get() { return this; }
 };
 
 class Portal : public Entity {
 
 protected:
-	Portal(Mesh mesh) : Entity{ mesh} {}
+	Portal(Mesh mesh) : Entity{ mesh } {}
 	
 public:
-	static Entity& create(Mesh mesh) {
+	static Portal& create(Mesh mesh) {
 		auto e = new Portal(mesh);
 		return *e;
 	}
-	static Entity& create() {
+	static Portal& create() {
 		auto mesh = plane();
 		return Portal::create(mesh);
 	}
 };
-
-
-
 
 class Sphere : public Entity {
 
@@ -226,11 +294,11 @@ protected:
 	Sphere(Mesh mesh) : Entity{ mesh } {}
 	
 public:
-	static Entity& create(Mesh mesh) {
+	static Sphere& create(Mesh mesh) {
 		auto e = new Sphere(mesh);
 		return *e;
 	}
-	static Entity& create(float radius, int slices = 40, int layers = 40) {
+	static Sphere& create(float radius, int slices = 40, int layers = 40) {
 		auto mesh = generateSphere(radius, slices, layers);
 		return Sphere::create(mesh);
 	}
