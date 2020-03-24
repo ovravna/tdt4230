@@ -26,6 +26,7 @@ public:
 		scale = glm::vec3(1, 1, 1);
 		color = glm::vec4(1, 1, 1, 1);
 		
+		currentTransformationMatrix = glm::mat4(1);
 
         referencePoint = glm::vec3(0, 0, 0);
         vertexArrayObjectID = -1;
@@ -53,7 +54,6 @@ public:
 
 	// The location of the node's reference point
 	glm::vec3 referencePoint;
-
 	// The ID of the VAO containing the "appearance" of this SceneNode.
 	int vertexArrayObjectID;
 	int textureID;

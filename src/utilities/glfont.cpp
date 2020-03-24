@@ -11,7 +11,7 @@ void clearText(Mesh * mesh) {
 
 }
 
-void setText(Mesh * mesh, std::string text) {
+void setTextCoodinates(Mesh * mesh, std::string text) {
 	
     for(unsigned int i = 0; i < mesh->textureCoordinates.size() / 4; i++)
     {
@@ -129,7 +129,7 @@ Mesh generateTextGeometryBuffer(std::string text, float characterHeightOverWidth
         mesh.indices.at(6 * i + 5) = 4 * i + 3;
 
     }
-	setText(&mesh, text);
+	setTextCoodinates(&mesh, text);
 
 
     return mesh;

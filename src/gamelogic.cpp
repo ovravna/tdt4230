@@ -17,6 +17,7 @@
 #include "gamelogic.h"
 #include "gametools.hpp"
 #include "sceneGraph.hpp"
+#include "entity.hpp"
 
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
@@ -54,7 +55,8 @@ glm::vec3 lightColors[3] {
 
 };
 
-SceneNode * portal0, * portal1;
+Entity * portal0, * portal1;
+Entity * awesomeCube;
 glm::mat4 portalViewMatrix;
 
 SceneNode * outlinedNodes[2];
@@ -75,9 +77,9 @@ GLint textPosLoc;
 Camera * cam;
 Mesh text;
 
-SceneNode* rootNode;
+Entity* rootNode;
 
-SceneNode* textNode;
+Text* textNode;
 
 double timeDelta;
 
@@ -143,7 +145,6 @@ SceneNode * newBall(SceneNode * parent, float radius, float slices, float layers
 	parent->children.push_back(node);
 
 	return node;
-
 }
 
 
@@ -190,7 +191,7 @@ SceneNode * initText(SceneNode * parent) {
 	PNGImage charmap = loadPNGFile("res/textures/charmap.png");
 	text = generateTextGeometryBuffer(30); 
 
-	textNode = createSceneNode();
+	auto textNode = createSceneNode();
 	textNode->vertexArrayObjectID = generateBuffer(text);
 	textNode->nodeType = GEOMETRY_2D;
 	textNode->textureID = loadTextureFromImage(charmap);
@@ -213,9 +214,8 @@ SceneNode * newLight(SceneNode * parent, glm::vec3 position, glm::vec4 color = g
 	return lightNode;
 }
 
-SceneNode * newPortal(SceneNode * parent, glm::vec3 position, glm::vec4 color, glm::vec3 rotation) {
-
-}
+/* SceneNode * newPortal(SceneNode * parent, glm::vec3 position, glm::vec4 color, glm::vec3 rotation) { */
+/* } */
 
 /**
  * Compute a world2camera view matrix to see from portal 'dst', given
@@ -264,7 +264,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     shaderSingleColor = new Gloom::Shader();
     shaderSingleColor->makeBasicShader("res/shaders/simple.vert", "res/shaders/singleColor.frag");
-	
 
     shader->activate();
 
@@ -283,18 +282,16 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	/* PNGImage diffuseTexture = loadPNGFile("res/textures/Brick03_col.png"); */
 	/* PNGImage normalMap = loadPNGFile("res/textures/Brick03_nrm.png"); */
 	/* PNGImage roughnessMap = loadPNGFile("res/textures/Brick03_rgh.png"); */
-	
 
 
     // Construct scene
-    rootNode = createSceneNode();
+    rootNode = Entity::create().get();
 
-	initText(rootNode);
-    /* newBall(rootNode, 1.0, 40, 40, glm::vec3(0, 0, 1)); */
-	/* newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, 4)); */
+	/* initText(rootNode); */
+	textNode = (Text*) Text::create(30)
+		.place(10, windowHeight - 50, 0)
+		.get();
 
-	int size = 10;
-	auto box = cube(glm::vec3(1));
 	/* for (int y = 0; y < size; y++) */ 
 	/* 	for (int x = 0; x < size; x++) { */
 	/* 		float a = rand(x, y); */
@@ -306,8 +303,18 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 	/* 	} */
 
-	auto o0 = newBox(rootNode, glm::vec3(1), glm::vec3(3, 0, 3), &box, glm::vec4(1, 0, 0, 1), GEOMETRY);  
-	auto o1 = newBox(rootNode, glm::vec3(1), glm::vec3(2, 0, 6), &box, glm::vec4(0.2, 0.4, 1, 1), GEOMETRY);  
+
+	auto o0 = Cube::create()
+		.setParent(rootNode)
+		.place(3, 0, 3)
+		.setColor(1, 0, 0)
+		.get();
+
+	auto o1 = Cube::create(o0->mesh)
+		.setParent(rootNode)
+		.place(2, 0, 6)
+		.setColor(0, 0, 1)
+		.get();
 
 	/* o0->textureID = loadTextureFromImage(diffuseTexture); */
 	/* o0->normalMapTextureID = loadTextureFromImage(normalMap); */
@@ -320,9 +327,25 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	outlinedNodes[0] = o0;
 	outlinedNodes[1] = o1;
 	
-	auto p = plane();
-	portal0 =  newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, -2), &p, glm::vec4(0, 1, 0, 1), GEOMETRY_PORTAL, glm::vec3(0, M_PI_2, 0)); 
-	portal1 =  newBox(rootNode, glm::vec3(1), glm::vec3(2, 0, -4), &p, glm::vec4(0, 1, 0, 1), GEOMETRY_PORTAL, glm::vec3(0, 0, 0)); 
+	/* auto p = plane(); */
+	/* portal0 =  newBox(rootNode, glm::vec3(1), glm::vec3(0, 0, -2), &p, glm::vec4(0, 1, 0, 1), GEOMETRY_PORTAL, glm::vec3(0, M_PI_2, 0)); */ 
+	/* portal1 =  newBox(rootNode, glm::vec3(1), glm::vec3(2, 0, -4), &p, glm::vec4(0, 1, 0, 1), GEOMETRY_PORTAL, glm::vec3(0, 0, 0)); */ 
+
+
+	portal0 = Portal::create()
+		.setParent(rootNode)
+		.place(0, 0, -2)
+		.setColor(0, 1, 0)
+		.setType(GEOMETRY_PORTAL)
+		.rotate(0, M_PI_2, 0)
+		.get();
+
+	portal1 = Portal::create(portal0->mesh)
+		.setParent(rootNode)
+		.place(2, 0, -4)
+		.setColor(0, 1, 0)
+		.setType(GEOMETRY_PORTAL)
+		.get();
 
 	/* Box::create(rootNode) */
 	/* 	->rotate(glm::vec3(0, M_PI_4, 0)) */
@@ -331,6 +354,17 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 	/* 	->generateVAO(); */
 		
 
+	awesomeCube = Cube::create()
+		.setParent(rootNode)
+		.setType(GEOMETRY)
+		.setColor(1, 1, 0)
+		.place(1, 0, -2)
+		.setReferencePoint(0.5, 0, 0)
+		.rotate(0, M_PI_4, 0)
+		.get();
+	
+	
+	
 	
 	newLight(rootNode, glm::vec3(7, 10, 3), glm::vec4(1, 1, 1, 1));
 	/* newLight(rootNode, glm::vec3(9, 13, 9), glm::vec4(0, 1, 0, 1)); */
@@ -354,7 +388,6 @@ void updateFrame(GLFWwindow* window) {
     timeDelta = getTimeDeltaSeconds();
 
     updateNodeTransformations(rootNode, glm::mat4(1));
-
 }
 
 void renderNode(SceneNode* node) {
@@ -441,8 +474,6 @@ void getOutlined(SceneNode * node, std::vector<SceneNode*> * accumulator) {
     for(SceneNode* child : node->children) {
         getOutlined(child, accumulator);
     }
-
-
 }
 
 void renderNodeOutlined(SceneNode * node) {
@@ -484,7 +515,6 @@ void renderNodeOutlined(SceneNode * node) {
 		glEnable(GL_DEPTH_TEST);  
 
 	}
-
 }
 
 void renderOutlined(SceneNode * node ) {
@@ -549,19 +579,17 @@ void renderOutlined(SceneNode * node ) {
     for(SceneNode* child : node->children) {
         renderOutlined(child);
     }
-
 }
 
-void renderText(SceneNode * node) {
-	
+void renderText(Text * node) {
 		shaderText->activate();
 		glBindTextureUnit(0, node->textureID);
 
 		int fps = std::round(1.0f / timeDelta);
-		setText(&text, fmt::format("{}", fps) );
+		node->setText( fmt::format("{}", fps) );
 		/* setText(&text, glm::to_string(cam->front) ); */
 
-		updateTextureCoordinates(node->vertexArrayObjectID, text);
+		/* updateTextureCoordinates(node->vertexArrayObjectID, text); */
 
 		/* glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(view)); */
 		/* glUniformMatrix4fv(5, 1, GL_FALSE, glm::value_ptr(projection)); */
@@ -578,7 +606,6 @@ void renderText(SceneNode * node) {
 }
 
 void renderOut() {
-
 		/* shaderSingleColor.setMat4("view", view); */
         /* shaderSingleColor.setMat4("projection", projection); */
 
@@ -655,8 +682,6 @@ void renderOut() {
         glBindVertexArray(0);
         glStencilMask(0xFF);
         glEnable(GL_DEPTH_TEST);
-
-
 }
 
 void renderFrame(GLFWwindow* window) {
@@ -677,6 +702,7 @@ void renderFrame(GLFWwindow* window) {
     /* glUniform4fv(7, 1, glm::value_ptr(lights[1])); */
     /* glUniform4fv(8, 1, glm::value_ptr(lights[2])); */
 
+	awesomeCube->rotate(-0.005, 0.01, 0);
 	lightIdx = 0;
 	lightFloat += 0.01;
     renderNode(rootNode);
@@ -685,8 +711,6 @@ void renderFrame(GLFWwindow* window) {
 
 
 	renderText(textNode);
-
-
 }
 
 
